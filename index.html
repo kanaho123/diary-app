@@ -1,0 +1,1399 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>今日の日記</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif;
+            background: #f5f5f5;
+            line-height: 1.6;
+            color: #333;
+            padding-bottom: 80px;
+        }
+
+        /* ヘッダー */
+        .header {
+            background: white;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid #e0e0e0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header h1 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .header p {
+            font-size: 13px;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        /* ナビゲーション */
+        .nav {
+            background: white;
+            display: flex;
+            border-bottom: 1px solid #e0e0e0;
+            position: sticky;
+            top: 80px;
+            z-index: 99;
+        }
+
+        .nav-btn {
+            flex: 1;
+            padding: 15px;
+            background: none;
+            border: none;
+            font-size: 15px;
+            cursor: pointer;
+            color: #888;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .nav-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            font-weight: 600;
+        }
+
+        /* コンテナ */
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* 質問カード */
+        .question-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .question-label {
+            display: block;
+            font-size: 15px;
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .required-badge {
+            display: inline-block;
+            background: #ff6b6b;
+            color: white;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-left: 8px;
+        }
+
+        .optional-badge {
+            display: inline-block;
+            background: #e0e0e0;
+            color: #666;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-left: 8px;
+        }
+
+        textarea, input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 60px;
+            transition: all 0.3s;
+        }
+
+        textarea:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+            background: #fafbff;
+        }
+
+        /* 気分タグ */
+        .mood-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .mood-tag {
+            padding: 8px 16px;
+            background: #f5f5f5;
+            border: 2px solid #e0e0e0;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .mood-tag:hover {
+            background: #e8ecff;
+        }
+
+        .mood-tag.selected {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        /* 折りたたみセクション */
+        .collapsible-section {
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .section-header {
+            padding: 18px 20px;
+            background: #fafafa;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+
+        .section-header:active {
+            background: #f0f0f0;
+        }
+
+        .section-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .section-subtitle {
+            font-size: 13px;
+            color: #888;
+            margin-top: 3px;
+        }
+
+        .section-arrow {
+            font-size: 20px;
+            color: #888;
+            transition: transform 0.3s;
+        }
+
+        .section-header.expanded .section-arrow {
+            transform: rotate(180deg);
+        }
+
+        .section-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .section-content.expanded {
+            max-height: 3000px;
+        }
+
+        .section-inner {
+            padding: 20px;
+        }
+
+        /* 個別質問の折りたたみ */
+        .question-item {
+            border-bottom: 1px solid #f0f0f0;
+            padding: 15px 0;
+        }
+
+        .question-item:last-child {
+            border-bottom: none;
+        }
+
+        .question-toggle {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            padding: 5px 0;
+        }
+
+        .question-text {
+            font-size: 14px;
+            color: #555;
+            flex: 1;
+        }
+
+        .favorite-btn {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 5px;
+            margin-right: 10px;
+        }
+
+        .question-arrow {
+            font-size: 18px;
+            color: #ccc;
+            transition: transform 0.3s;
+        }
+
+        .question-toggle.expanded .question-arrow {
+            transform: rotate(180deg);
+        }
+
+        .question-input-area {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .question-input-area.expanded {
+            max-height: 300px;
+            margin-top: 10px;
+        }
+
+        /* ボタン */
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .save-btn-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 15px 20px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+
+        /* 共有設定 */
+        .share-settings {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .share-toggle {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 28px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .3s;
+            border-radius: 28px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: #667eea;
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(22px);
+        }
+
+        .share-options {
+            display: none;
+        }
+
+        .share-options.visible {
+            display: block;
+        }
+
+        .share-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f5f5f5;
+        }
+
+        .share-item:last-child {
+            border-bottom: none;
+        }
+
+        .share-item-label {
+            font-size: 14px;
+            color: #555;
+        }
+
+        /* ゾーン選択 */
+        .zone-selector {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .zone-btn {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .zone-btn.selected {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        /* 匿名性選択 */
+        .anonymity-selector {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .anonymity-btn {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .anonymity-btn.selected {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        /* フィード */
+        .feed-item {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .feed-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .feed-author {
+            font-size: 14px;
+            color: #888;
+        }
+
+        .feed-date {
+            font-size: 13px;
+            color: #aaa;
+        }
+
+        .feed-content {
+            margin-bottom: 15px;
+        }
+
+        .feed-question {
+            margin-bottom: 12px;
+        }
+
+        .feed-question-title {
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        .feed-question-answer {
+            font-size: 15px;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .feed-reactions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            padding-top: 10px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .reaction-btn {
+            padding: 8px 14px;
+            background: #f5f5f5;
+            border: none;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .reaction-btn:hover {
+            background: #e8ecff;
+        }
+
+        .reaction-btn.sent {
+            background: #667eea;
+            color: white;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .empty-state-text {
+            font-size: 15px;
+            line-height: 1.8;
+        }
+
+        /* ランダム質問カード */
+        .random-question-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border: 1px solid #e8e8e8;
+        }
+
+        .random-question-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .random-question-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+        }
+
+        .random-question-text-display {
+            font-size: 15px;
+            color: #333;
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+
+        /* お気に入り質問 */
+        .favorite-questions {
+            background: #fffbf0;
+            border: 2px solid #ffe4a3;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+
+        .favorite-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #d4a500;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* 成功メッセージ */
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .success-message.show {
+            display: flex;
+        }
+
+        /* レスポンシブ */
+        @media (max-width: 480px) {
+            .container {
+                padding: 15px;
+            }
+
+            .question-card, .collapsible-section {
+                border-radius: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- ヘッダー -->
+    <div class="header">
+        <h1>📖 今日の日記</h1>
+        <p id="headerSubtitle">今日もおつかれさまです</p>
+    </div>
+
+    <!-- ナビゲーション -->
+    <div class="nav">
+        <button class="nav-btn active" onclick="switchPage('write')">書く</button>
+        <button class="nav-btn" onclick="switchPage('feed')" id="feedNavBtn">みんなの日記</button>
+    </div>
+
+    <!-- コンテナ -->
+    <div class="container">
+        <!-- 書くページ -->
+        <div id="writePage" class="page active">
+            <!-- 成功メッセージ -->
+            <div class="success-message" id="successMessage">
+                <span>✅</span>
+                <span id="successMessageText">日記を保存しました！</span>
+            </div>
+
+            <!-- 名前入力欄 -->
+            <div class="question-card">
+                <label class="question-label">
+                    名前（表示用）<span class="optional-badge">任意</span>
+                </label>
+                <input type="text" id="userName" placeholder="未入力の場合は匿名表示になります" />
+            </div>
+
+            <!-- 必須質問 -->
+            <div class="question-card">
+                <label class="question-label">
+                    Q1: 今の気分は？<span class="required-badge">必須</span>
+                </label>
+                <input type="text" id="mood" placeholder="一言で表すと..." />
+                <div class="mood-tags">
+                    <div class="mood-tag" onclick="selectMood(this, '😊 よい')">😊 よい</div>
+                    <div class="mood-tag" onclick="selectMood(this, '😌 まあまあ')">😌 まあまあ</div>
+                    <div class="mood-tag" onclick="selectMood(this, '😐 ふつう')">😐 ふつう</div>
+                    <div class="mood-tag" onclick="selectMood(this, '😔 しんどい')">😔 しんどい</div>
+                    <div class="mood-tag" onclick="selectMood(this, '😤 モヤモヤ')">😤 モヤモヤ</div>
+                    <div class="mood-tag" onclick="selectMood(this, '🤔 よくわからん')">🤔 よくわからん</div>
+                </div>
+            </div>
+
+            <div class="question-card">
+                <label class="question-label">
+                    Q2: 今日いちばん残したいことは？<span class="required-badge">必須</span>
+                </label>
+                <textarea id="memorable" placeholder="良いこと、悪いこと、どうでもいいこと、なんでもOK"></textarea>
+            </div>
+
+            <div class="question-card">
+                <label class="question-label">
+                    Q3: 今日の自分に一言<span class="required-badge">必須</span>
+                </label>
+                <textarea id="selfTalk" placeholder="褒め、ねぎらい、ツッコミ、なんでもOK"></textarea>
+            </div>
+
+            <!-- お気に入り質問 -->
+            <div class="favorite-questions" id="favoriteSection" style="display: none;">
+                <div class="favorite-title">⭐ よく書く質問</div>
+                <div id="favoriteQuestionsList"></div>
+            </div>
+
+            <!-- ランダム質問 -->
+            <div class="random-question-card">
+                <div class="random-question-header">
+                    <span class="random-question-title">📋 毎日ランダム質問</span>
+                    <span class="optional-badge">任意</span>
+                </div>
+                <div class="random-question-text-display" id="randomQuestionText"></div>
+                <textarea id="randomAnswer" placeholder="答えてみる（任意）"></textarea>
+            </div>
+
+            <!-- 任意質問（クイック） -->
+            <div class="collapsible-section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <div>
+                        <div class="section-title">さっと書きたい人だけ</div>
+                        <div class="section-subtitle">気軽に書ける質問たち</div>
+                    </div>
+                    <span class="section-arrow">▼</span>
+                </div>
+                <div class="section-content">
+                    <div class="section-inner" id="quickQuestions"></div>
+                </div>
+            </div>
+
+            <!-- 任意質問（ディープ） -->
+            <div class="collapsible-section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <div>
+                        <div class="section-title">ちょっと考えたい人だけ</div>
+                        <div class="section-subtitle">内面に触れる質問たち</div>
+                    </div>
+                    <span class="section-arrow">▼</span>
+                </div>
+                <div class="section-content">
+                    <div class="section-inner" id="deepQuestions"></div>
+                </div>
+            </div>
+
+            <!-- 共有設定 -->
+            <div class="share-settings">
+                <div class="share-toggle">
+                    <div>
+                        <div style="font-weight: 600; margin-bottom: 5px;">この日記を共有する</div>
+                        <div style="font-size: 13px; color: #888;">書いた人だけが見られます</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="shareToggle" onchange="toggleShareOptions()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="share-options" id="shareOptions">
+                    <!-- ゾーン選択 -->
+                    <div style="margin-bottom: 20px;">
+                        <div style="font-size: 14px; font-weight: 500; margin-bottom: 10px;">どこで共有する？</div>
+                        <div class="zone-selector">
+                            <button class="zone-btn selected" onclick="selectZone(this, 'friends')">👥 友達だけ</button>
+                            <button class="zone-btn" onclick="selectZone(this, 'world')">🌍 全世界</button>
+                        </div>
+                    </div>
+
+                    <!-- 匿名性選択 -->
+                    <div style="margin-bottom: 20px;">
+                        <div style="font-size: 14px; font-weight: 500; margin-bottom: 10px;">名前の表示</div>
+                        <div class="anonymity-selector">
+                            <button class="anonymity-btn selected" onclick="selectAnonymity(this, 'real')">実名</button>
+                            <button class="anonymity-btn" onclick="selectAnonymity(this, 'nickname')">ニックネーム</button>
+                            <button class="anonymity-btn" onclick="selectAnonymity(this, 'anonymous')">完全匿名</button>
+                        </div>
+                    </div>
+
+                    <!-- 共有項目 -->
+                    <div style="font-size: 14px; font-weight: 500; margin-bottom: 10px;">何を共有する？</div>
+                    <div class="share-item">
+                        <span class="share-item-label">今の気分</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="shareMood" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="share-item">
+                        <span class="share-item-label">残したいこと</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="shareMemorable" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="share-item">
+                        <span class="share-item-label">自分に一言</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="shareSelfTalk" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="share-item">
+                        <span class="share-item-label">毎日ランダム質問</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="shareRandom" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="share-item">
+                        <span class="share-item-label">任意質問の回答</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="shareOptional" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- みんなの日記ページ -->
+        <div id="feedPage" class="page">
+            <div id="feedContent"></div>
+        </div>
+    </div>
+
+    <!-- 保存ボタン -->
+    <div class="save-btn-container">
+        <button class="btn btn-primary" id="saveBtn" onclick="saveDiary()">📝 保存する</button>
+    </div>
+
+    <script>
+        // データ定義（ジャーナリング質問を削除）
+        const quickQuestions = [
+            "今日の happy",
+            "今日の自分を褒めたいところ",
+            "今日のやっちまったエピソード",
+            "今日何食べた？",
+            "今日、ありがとうを伝えたいこと",
+            "今日の服装を一言で言うと？",
+            "今日の体調・コンディション",
+            "みんなにシェアしたいこと",
+            "明日楽しみにしてること",
+            "明日やりたい事"
+        ];
+
+        const deepQuestions = [
+            "今日、いちばん気持ちが揺れたことは？",
+            "今日、安心した瞬間は？",
+            "今日、ちょっと無理してたかもと思う瞬間あった？",
+            "今日、正直めんどくさかったこと",
+            "今日、やらなくてよかったと思うこと",
+            "今日、なんとなく引っかかってること",
+            "その引っかかりは、何が大事だからだと思う？",
+            "もし友だちが同じ1日を過ごしてたら、なんて声かける？",
+            "明日どうなったらまあok？",
+            "今日の自分にとって、いちばん守りたかったものは？"
+        ];
+
+        const randomQuestionPool = [
+            "今日を一言でタイトルにすると？",
+            "今日のBGMは？",
+            "今日を色で表すと？",
+            "今日いちばん人間っぽかった瞬間は？",
+            "今日の「まあいっか」はどれ？",
+            "今日のLOVEは？",
+            "今日いちばん笑ったこと",
+            "今日の小さな発見",
+            "今日の自分を動物に例えると？"
+        ];
+
+        // 状態管理
+        let currentPage = 'write';
+        let selectedZone = 'friends';
+        let selectedAnonymity = 'real';
+        let favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+        let diaries = JSON.parse(localStorage.getItem('diaries') || '[]');
+        let todayDiary = null;
+        let isEditMode = false;
+
+        // 初期化
+        window.onload = function() {
+            renderQuestions();
+            setRandomQuestion();
+            updateFavoriteSection();
+            checkTodayDiary();
+            updateFeedButton();
+            loadUserName();
+            loadTodayDiaryToForm();
+        };
+
+        // 名前の読み込み
+        function loadUserName() {
+            const savedName = localStorage.getItem('userName');
+            if (savedName) {
+                document.getElementById('userName').value = savedName;
+            }
+        }
+
+        // 名前の保存
+        function saveUserName() {
+            const name = document.getElementById('userName').value;
+            localStorage.setItem('userName', name);
+        }
+
+        // 今日の日記があればフォームに復元
+        function loadTodayDiaryToForm() {
+            if (!todayDiary) {
+                isEditMode = false;
+                document.getElementById('saveBtn').textContent = '📝 保存する';
+                return;
+            }
+
+            isEditMode = true;
+            document.getElementById('saveBtn').textContent = '🔄 更新する';
+
+            document.getElementById('mood').value = todayDiary.mood || '';
+            document.getElementById('memorable').value = todayDiary.memorable || '';
+            document.getElementById('selfTalk').value = todayDiary.selfTalk || '';
+            
+            document.querySelectorAll('.mood-tag').forEach(tag => {
+                tag.classList.remove('selected');
+                if (tag.textContent === todayDiary.mood) {
+                    tag.classList.add('selected');
+                }
+            });
+
+            document.getElementById('randomAnswer').value = todayDiary.randomAnswer || '';
+
+            if (todayDiary.optionalAnswers && todayDiary.optionalAnswers.length > 0) {
+                todayDiary.optionalAnswers.forEach(item => {
+                    const textarea = document.getElementById(item.id);
+                    if (textarea) {
+                        textarea.value = item.answer;
+                        const questionToggle = textarea.closest('.question-item').querySelector('.question-toggle');
+                        const inputArea = textarea.closest('.question-input-area');
+                        if (questionToggle && inputArea) {
+                            questionToggle.classList.add('expanded');
+                            inputArea.classList.add('expanded');
+                        }
+                    }
+                });
+            }
+
+            document.getElementById('shareToggle').checked = todayDiary.shared || false;
+            toggleShareOptions();
+
+            if (todayDiary.shared) {
+                selectedZone = todayDiary.zone || 'friends';
+                document.querySelectorAll('.zone-btn').forEach(btn => {
+                    btn.classList.remove('selected');
+                });
+                const zoneBtn = Array.from(document.querySelectorAll('.zone-btn')).find(btn => 
+                    btn.textContent.includes(selectedZone === 'friends' ? '友達' : '全世界')
+                );
+                if (zoneBtn) zoneBtn.classList.add('selected');
+
+                selectedAnonymity = todayDiary.anonymity || 'real';
+                document.querySelectorAll('.anonymity-btn').forEach(btn => {
+                    btn.classList.remove('selected');
+                });
+                const anonymityBtn = Array.from(document.querySelectorAll('.anonymity-btn')).find(btn => {
+                    if (selectedAnonymity === 'real') return btn.textContent.includes('実名');
+                    if (selectedAnonymity === 'nickname') return btn.textContent.includes('ニックネーム');
+                    if (selectedAnonymity === 'anonymous') return btn.textContent.includes('完全匿名');
+                });
+                if (anonymityBtn) anonymityBtn.classList.add('selected');
+
+                document.getElementById('shareMood').checked = todayDiary.shareItems?.mood !== false;
+                document.getElementById('shareMemorable').checked = todayDiary.shareItems?.memorable !== false;
+                document.getElementById('shareSelfTalk').checked = todayDiary.shareItems?.selfTalk !== false;
+                document.getElementById('shareRandom').checked = todayDiary.shareItems?.random !== false;
+                document.getElementById('shareOptional').checked = todayDiary.shareItems?.optional !== false;
+            }
+        }
+
+        // 質問のレンダリング（ジャーナリングを削除）
+        function renderQuestions() {
+            renderQuestionList('quickQuestions', quickQuestions, 'quick');
+            renderQuestionList('deepQuestions', deepQuestions, 'deep');
+        }
+
+        function renderQuestionList(containerId, questions, category) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = questions.map((q, index) => {
+                const isFavorite = favorites.some(f => f.question === q && f.category === category);
+                const questionId = `${category}_${index}`;
+                return `
+                    <div class="question-item">
+                        <div class="question-toggle" onclick="toggleQuestionItem(this)">
+                            <button class="favorite-btn" onclick="event.stopPropagation(); toggleFavorite('${escapeHtml(q)}', '${category}', this)">
+                                ${isFavorite ? '⭐' : '☆'}
+                            </button>
+                            <span class="question-text">${escapeHtml(q)}</span>
+                            <span class="question-arrow">▼</span>
+                        </div>
+                        <div class="question-input-area">
+                            <textarea id="${questionId}" data-question="${escapeHtml(q)}" placeholder="自由に書いてみてください"></textarea>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ランダム質問の設定
+        function setRandomQuestion() {
+            const today = new Date().toDateString();
+            let savedQuestion = localStorage.getItem('todayRandomQuestion');
+            let savedDate = localStorage.getItem('todayRandomQuestionDate');
+
+            if (savedDate !== today) {
+                const randomIndex = Math.floor(Math.random() * randomQuestionPool.length);
+                savedQuestion = randomQuestionPool[randomIndex];
+                localStorage.setItem('todayRandomQuestion', savedQuestion);
+                localStorage.setItem('todayRandomQuestionDate', today);
+            }
+
+            document.getElementById('randomQuestionText').textContent = savedQuestion;
+        }
+
+        // お気に入り機能
+        function toggleFavorite(question, category, buttonElement) {
+            const existingIndex = favorites.findIndex(f => f.question === question && f.category === category);
+            
+            if (existingIndex >= 0) {
+                favorites.splice(existingIndex, 1);
+            } else {
+                if (favorites.length >= 5) {
+                    alert('お気に入りは最大5個までです');
+                    return;
+                }
+                favorites.push({ question, category });
+            }
+            
+            localStorage.setItem('favorites', JSON.stringify(favorites));
+            renderQuestions();
+            updateFavoriteSection();
+        }
+
+        function updateFavoriteSection() {
+            const section = document.getElementById('favoriteSection');
+            const list = document.getElementById('favoriteQuestionsList');
+            
+            if (favorites.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+            
+            section.style.display = 'block';
+            list.innerHTML = favorites.map((fav, index) => {
+                const questionId = `fav_${index}`;
+                return `
+                    <div class="question-item">
+                        <div class="question-toggle" onclick="toggleQuestionItem(this)">
+                            <span class="question-text">${escapeHtml(fav.question)}</span>
+                            <span class="question-arrow">▼</span>
+                        </div>
+                        <div class="question-input-area">
+                            <textarea id="${questionId}" data-question="${escapeHtml(fav.question)}" placeholder="自由に書いてみてください"></textarea>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // セクション開閉
+        function toggleSection(header) {
+            header.classList.toggle('expanded');
+            const content = header.nextElementSibling;
+            content.classList.toggle('expanded');
+        }
+
+        // 個別質問の開閉
+        function toggleQuestionItem(toggleElement) {
+            toggleElement.classList.toggle('expanded');
+            const inputArea = toggleElement.nextElementSibling;
+            inputArea.classList.toggle('expanded');
+        }
+
+        // 気分選択
+        function selectMood(element, mood) {
+            document.querySelectorAll('.mood-tag').forEach(tag => {
+                tag.classList.remove('selected');
+            });
+            element.classList.add('selected');
+            document.getElementById('mood').value = mood;
+        }
+
+        // 共有設定
+        function toggleShareOptions() {
+            const toggle = document.getElementById('shareToggle');
+            const options = document.getElementById('shareOptions');
+            options.classList.toggle('visible', toggle.checked);
+        }
+
+        // ゾーン選択
+        function selectZone(element, zone) {
+            selectedZone = zone;
+            document.querySelectorAll('.zone-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            element.classList.add('selected');
+        }
+
+        // 匿名性選択
+        function selectAnonymity(element, anonymity) {
+            selectedAnonymity = anonymity;
+            document.querySelectorAll('.anonymity-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            element.classList.add('selected');
+        }
+
+        // 任意質問の回答を収集
+        function collectOptionalAnswers() {
+            const answers = [];
+            const allTextareas = document.querySelectorAll('textarea[data-question]');
+            
+            allTextareas.forEach(textarea => {
+                const answer = textarea.value.trim();
+                if (answer) {
+                    answers.push({
+                        id: textarea.id,
+                        question: textarea.getAttribute('data-question'),
+                        answer: answer
+                    });
+                }
+            });
+            
+            return answers;
+        }
+
+        // 日記保存
+        function saveDiary() {
+            const mood = document.getElementById('mood').value;
+            const memorable = document.getElementById('memorable').value;
+            const selfTalk = document.getElementById('selfTalk').value;
+
+            if (!mood || !memorable || !selfTalk) {
+                alert('必須項目（気分・残したいこと・自分に一言）を入力してください');
+                return;
+            }
+
+            saveUserName();
+
+            const optionalAnswers = collectOptionalAnswers();
+
+            const diary = {
+                id: isEditMode ? todayDiary.id : Date.now(),
+                date: new Date().toISOString(),
+                mood,
+                memorable,
+                selfTalk,
+                randomQuestion: document.getElementById('randomQuestionText').textContent,
+                randomAnswer: document.getElementById('randomAnswer').value,
+                optionalAnswers: optionalAnswers,
+                shared: document.getElementById('shareToggle').checked,
+                zone: selectedZone,
+                anonymity: selectedAnonymity,
+                author: getAuthorName(),
+                shareItems: {
+                    mood: document.getElementById('shareMood').checked,
+                    memorable: document.getElementById('shareMemorable').checked,
+                    selfTalk: document.getElementById('shareSelfTalk').checked,
+                    random: document.getElementById('shareRandom').checked,
+                    optional: document.getElementById('shareOptional').checked
+                }
+            };
+
+            if (isEditMode) {
+                const index = diaries.findIndex(d => d.id === todayDiary.id);
+                if (index >= 0) {
+                    diaries[index] = diary;
+                }
+            } else {
+                diaries.unshift(diary);
+            }
+
+            todayDiary = diary;
+            localStorage.setItem('diaries', JSON.stringify(diaries));
+
+            const successMsg = document.getElementById('successMessage');
+            const successText = document.getElementById('successMessageText');
+            successText.textContent = isEditMode ? '日記を更新しました！' : '日記を保存しました！';
+            successMsg.classList.add('show');
+            setTimeout(() => {
+                successMsg.classList.remove('show');
+            }, 3000);
+
+            isEditMode = true;
+            document.getElementById('saveBtn').textContent = '🔄 更新する';
+
+            updateFeedButton();
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // 著者名の取得
+        function getAuthorName() {
+            const userName = document.getElementById('userName').value.trim();
+            
+            if (selectedAnonymity === 'anonymous') {
+                return '匿名';
+            } else if (selectedAnonymity === 'nickname') {
+                return userName || 'ニックネーム';
+            } else {
+                return userName || '名前未設定';
+            }
+        }
+
+        // 今日の日記チェック
+        function checkTodayDiary() {
+            const today = new Date().toDateString();
+            todayDiary = diaries.find(d => new Date(d.date).toDateString() === today);
+        }
+
+        // フィードボタンの更新
+        function updateFeedButton() {
+            const feedBtn = document.getElementById('feedNavBtn');
+            if (todayDiary) {
+                feedBtn.textContent = 'みんなの日記';
+                feedBtn.disabled = false;
+                feedBtn.style.opacity = '1';
+            } else {
+                feedBtn.textContent = 'みんなの日記 🔒';
+                feedBtn.disabled = false;
+                feedBtn.style.opacity = '0.5';
+            }
+        }
+
+        // ページ切り替え
+        function switchPage(page) {
+            if (page === 'feed' && !todayDiary) {
+                alert('今日の日記を書くと、みんなの日記が見られるようになります');
+                return;
+            }
+
+            currentPage = page;
+            
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            
+            if (page === 'write') {
+                document.getElementById('writePage').classList.add('active');
+                document.querySelector('.nav-btn:nth-child(1)').classList.add('active');
+                document.querySelector('.save-btn-container').style.display = 'block';
+            } else if (page === 'feed') {
+                document.getElementById('feedPage').classList.add('active');
+                document.querySelector('.nav-btn:nth-child(2)').classList.add('active');
+                document.querySelector('.save-btn-container').style.display = 'none';
+                renderFeed();
+            }
+        }
+
+        // XSS対策のHTMLエスケープ
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // フィード表示
+        function renderFeed() {
+            const feedContent = document.getElementById('feedContent');
+            
+            if (!todayDiary) {
+                feedContent.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🔒</div>
+                        <div class="empty-state-text">
+                            今日の日記を書くと<br>
+                            みんなの日記が見られます
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            const sharedDiaries = diaries.filter(d => d.shared && d.id !== todayDiary.id);
+            
+            if (sharedDiaries.length === 0) {
+                feedContent.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📝</div>
+                        <div class="empty-state-text">
+                            まだ誰も日記を書いていません<br>
+                            あなたが最初の一人です
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            feedContent.innerHTML = sharedDiaries.map(diary => {
+                let contentHtml = '';
+
+                const shareItems = diary.shareItems || {
+                    mood: true,
+                    memorable: true,
+                    selfTalk: true,
+                    random: true,
+                    optional: true
+                };
+
+                if (shareItems.mood && diary.mood) {
+                    contentHtml += `
+                        <div class="feed-question">
+                            <div class="feed-question-title">気分</div>
+                            <div class="feed-question-answer">${escapeHtml(diary.mood)}</div>
+                        </div>
+                    `;
+                }
+
+                if (shareItems.memorable && diary.memorable) {
+                    contentHtml += `
+                        <div class="feed-question">
+                            <div class="feed-question-title">残したいこと</div>
+                            <div class="feed-question-answer">${escapeHtml(diary.memorable)}</div>
+                        </div>
+                    `;
+                }
+
+                if (shareItems.selfTalk && diary.selfTalk) {
+                    contentHtml += `
+                        <div class="feed-question">
+                            <div class="feed-question-title">自分に一言</div>
+                            <div class="feed-question-answer">${escapeHtml(diary.selfTalk)}</div>
+                        </div>
+                    `;
+                }
+
+                if (shareItems.random && diary.randomAnswer) {
+                    contentHtml += `
+                        <div class="feed-question">
+                            <div class="feed-question-title">${escapeHtml(diary.randomQuestion)}</div>
+                            <div class="feed-question-answer">${escapeHtml(diary.randomAnswer)}</div>
+                        </div>
+                    `;
+                }
+
+                if (shareItems.optional && diary.optionalAnswers && diary.optionalAnswers.length > 0) {
+                    diary.optionalAnswers.forEach(item => {
+                        contentHtml += `
+                            <div class="feed-question">
+                                <div class="feed-question-title">${escapeHtml(item.question)}</div>
+                                <div class="feed-question-answer">${escapeHtml(item.answer)}</div>
+                            </div>
+                        `;
+                    });
+                }
+
+                return `
+                    <div class="feed-item">
+                        <div class="feed-header">
+                            <span class="feed-author">${escapeHtml(diary.author)}</span>
+                            <span class="feed-date">${formatDate(diary.date)}</span>
+                        </div>
+                        <div class="feed-content">
+                            ${contentHtml}
+                        </div>
+                        <div class="feed-reactions">
+                            <button class="reaction-btn" onclick="sendReaction(${diary.id}, 'わかる', this)">
+                                💭 わかる
+                            </button>
+                            <button class="reaction-btn" onclick="sendReaction(${diary.id}, '笑った', this)">
+                                😊 笑った
+                            </button>
+                            <button class="reaction-btn" onclick="sendReaction(${diary.id}, 'そっと共感', this)">
+                                🤝 そっと共感
+                            </button>
+                            <button class="reaction-btn" onclick="sendReaction(${diary.id}, '大丈夫そう', this)">
+                                👍 大丈夫そう
+                            </button>
+                            <button class="reaction-btn" onclick="sendReaction(${diary.id}, 'それ好き', this)">
+                                ❤️ それ好き
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diff = now - date;
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            
+            if (hours < 1) {
+                return 'たった今';
+            } else if (hours < 24) {
+                return `${hours}時間前`;
+            } else {
+                return `${Math.floor(hours / 24)}日前`;
+            }
+        }
+
+        // リアクション送信
+        function sendReaction(diaryId, reaction, buttonElement) {
+            if (buttonElement.classList.contains('sent')) {
+                buttonElement.classList.remove('sent');
+                alert('リアクションを取り消しました');
+            } else {
+                buttonElement.parentElement.querySelectorAll('.reaction-btn').forEach(b => {
+                    b.classList.remove('sent');
+                });
+                buttonElement.classList.add('sent');
+                alert(`「${reaction}」を送りました`);
+            }
+        }
+    </script>
+</body>
+</html>
