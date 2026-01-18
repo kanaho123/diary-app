@@ -1,0 +1,1893 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>今日の日記 v0.0.22</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      color: #333;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      overflow: hidden;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      text-align: center;
+      position: relative;
+    }
+    .version-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(255,255,255,0.2);
+      padding: 5px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .header h1 {
+      font-size: 24px;
+      margin-bottom: 5px;
+    }
+    .nickname-display {
+      font-size: 14px;
+      opacity: 0.9;
+      margin-top: 8px;
+    }
+    .tabs {
+      display: flex;
+      background: #f5f5f5;
+      border-bottom: 2px solid #e0e0e0;
+    }
+    .tab {
+      flex: 1;
+      padding: 15px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      border: none;
+      background: transparent;
+      font-size: 14px;
+      color: #666;
+    }
+    .tab.active {
+      background: white;
+      color: #667eea;
+      font-weight: bold;
+      border-bottom: 3px solid #667eea;
+    }
+    .tab-content {
+      display: none;
+      padding: 20px;
+      animation: fadeIn 0.3s;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: #555;
+      font-weight: 500;
+      font-size: 14px;
+    }
+    .question-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .question-label {
+      font-weight: 500;
+      color: #555;
+      font-size: 14px;
+    }
+    .required-badge, .optional-badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 8px;
+      font-weight: 500;
+    }
+    .required-badge {
+      background: #ffe0e0;
+      color: #d32f2f;
+    }
+    .optional-badge {
+      background: #e3f2fd;
+      color: #1976d2;
+    }
+    .form-group input, .form-group textarea, .form-group select {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+      font-family: inherit;
+    }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    .form-group textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+    .visibility-group {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+    .visibility-btn {
+      flex: 1;
+      min-width: 100px;
+      padding: 8px 12px;
+      border: 2px solid #e0e0e0;
+      background: white;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 12px;
+      text-align: center;
+    }
+    .visibility-btn:hover {
+      border-color: #667eea;
+    }
+    .visibility-btn.active {
+      background: #667eea;
+      color: white;
+      border-color: #667eea;
+    }
+    .btn {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    .btn:active {
+      transform: translateY(0);
+    }
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .btn-secondary {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    .feed-zone-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .feed-zone-btn {
+      flex: 1;
+      padding: 10px;
+      border: 2px solid #e0e0e0;
+      background: white;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 14px;
+    }
+    .feed-zone-btn.active {
+      background: #667eea;
+      color: white;
+      border-color: #667eea;
+    }
+    .date-info-banner {
+      background: #e3f2fd;
+      border: 1px solid #90caf9;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 15px;
+      font-size: 13px;
+      color: #1565c0;
+      text-align: center;
+    }
+    .debug-info-box {
+      background: #fff3e0;
+      border: 1px solid #ffb74d;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 15px;
+      font-size: 11px;
+      color: #e65100;
+      font-family: monospace;
+      line-height: 1.6;
+    }
+    .my-diary-filter {
+      background: #f5f5f5;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .my-diary-filter label {
+      font-size: 14px;
+      color: #555;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .my-diary-filter select {
+      padding: 6px 10px;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 13px;
+      background: white;
+    }
+    .diary-card {
+      background: #f9f9f9;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 12px;
+      border: 1px solid #e0e0e0;
+    }
+    .diary-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    .diary-author {
+      font-weight: bold;
+      color: #667eea;
+      font-size: 15px;
+    }
+    .diary-date {
+      font-size: 12px;
+      color: #999;
+    }
+    .diary-content {
+      line-height: 1.5;
+    }
+    .diary-answer {
+      margin-bottom: 8px;
+    }
+    .diary-question {
+      font-weight: 500;
+      color: #555;
+      margin-bottom: 3px;
+      font-size: 13px;
+    }
+    .diary-answer-text {
+      color: #333;
+      padding-left: 10px;
+      font-size: 14px;
+      white-space: pre-wrap;
+    }
+    .show-more-btn {
+      background: #e3f2fd;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 6px;
+      cursor: pointer;
+      color: #1976d2;
+      font-size: 13px;
+      margin-top: 8px;
+      transition: background 0.3s;
+    }
+    .show-more-btn:hover {
+      background: #bbdefb;
+    }
+    .login-section {
+      text-align: center;
+      padding: 40px 20px;
+    }
+    .login-section h2 {
+      margin-bottom: 20px;
+      color: #667eea;
+    }
+    .login-section input {
+      max-width: 300px;
+      margin: 0 auto 15px;
+    }
+    .settings-section {
+      padding: 0;
+    }
+    .settings-group {
+      margin-bottom: 25px;
+    }
+    .settings-group h3 {
+      color: #667eea;
+      margin-bottom: 15px;
+      font-size: 16px;
+    }
+    .nickname-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      background: #f5f5f5;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    .nickname-item.active {
+      background: #e3f2fd;
+      border: 2px solid #667eea;
+    }
+    .nickname-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .icon-btn {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.3s;
+    }
+    .icon-btn.edit {
+      background: #fff3e0;
+      color: #f57c00;
+    }
+    .icon-btn.delete {
+      background: #ffebee;
+      color: #c62828;
+    }
+    .icon-btn.select {
+      background: #e3f2fd;
+      color: #1976d2;
+    }
+    .icon-btn:hover {
+      opacity: 0.8;
+    }
+    .friend-code-display {
+      background: #f5f5f5;
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+      margin-bottom: 15px;
+    }
+    .friend-code-text {
+      font-size: 24px;
+      font-weight: bold;
+      color: #667eea;
+      letter-spacing: 2px;
+      margin-top: 8px;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #999;
+    }
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 15px;
+    }
+    .message {
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      font-size: 14px;
+    }
+    .message.success {
+      background: #e8f5e9;
+      color: #2e7d32;
+      border: 1px solid #81c784;
+    }
+    .message.error {
+      background: #ffebee;
+      color: #c62828;
+      border: 1px solid #ef5350;
+    }
+    .debug-panel {
+      display: none;
+      background: #f5f5f5;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 15px;
+      margin-top: 20px;
+      font-size: 12px;
+      font-family: monospace;
+    }
+    .debug-panel.visible {
+      display: block;
+    }
+    .debug-panel h4 {
+      margin-bottom: 10px;
+      color: #667eea;
+    }
+    .debug-line {
+      margin-bottom: 5px;
+      color: #555;
+    }
+    .my-diary-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .my-diary-actions button {
+      flex: 1;
+      padding: 8px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.3s;
+    }
+    .edit-diary-btn {
+      background: #fff3e0;
+      color: #f57c00;
+    }
+    .delete-diary-btn {
+      background: #ffebee;
+      color: #c62828;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal.visible {
+      display: flex;
+    }
+    .modal-content {
+      background: white;
+      border-radius: 15px;
+      padding: 25px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .modal-header h3 {
+      color: #667eea;
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #999;
+    }
+    .date-divider {
+      background: #667eea;
+      color: white;
+      padding: 8px 15px;
+      border-radius: 8px;
+      margin: 15px 0 12px 0;
+      font-weight: bold;
+      font-size: 14px;
+      text-align: center;
+    }
+    .changelog {
+      background: #f5f5f5;
+      border-radius: 8px;
+      padding: 15px;
+      font-size: 13px;
+      line-height: 1.8;
+    }
+    .changelog h4 {
+      color: #667eea;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="version-badge" id="versionBadge">v0.0.22</div>
+      <h1>📔 今日の日記</h1>
+      <div class="nickname-display" id="nicknameDisplay"></div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="write">書く</button>
+      <button class="tab" data-tab="feed">みんなの記録</button>
+      <button class="tab" data-tab="my">マイ日記</button>
+      <button class="tab" data-tab="settings">マイページ</button>
+    </div>
+
+    <!-- 書くタブ -->
+    <div class="tab-content active" id="writeTab">
+      <div id="loginSection" class="login-section">
+        <h2>ようこそ！</h2>
+        <p style="margin-bottom: 20px; color: #666;">ニックネームを入力してログイン</p>
+        <input type="text" id="loginNickname" placeholder="ニックネーム" style="display: block;">
+        <button class="btn" onclick="handleLogin()">ログイン</button>
+      </div>
+
+      <div id="writeSection" style="display: none;">
+        <div id="messageBox"></div>
+        <div id="questionsContainer"></div>
+        <button class="btn" id="saveButton" onclick="saveDiary()">保存する</button>
+      </div>
+    </div>
+
+    <!-- みんなの記録タブ -->
+    <div class="tab-content" id="feedTab">
+      <div class="date-info-banner">
+        今日の区切り：12:00（12:00〜翌11:59）
+      </div>
+      <div class="feed-zone-tabs">
+        <button class="feed-zone-btn active" data-zone="public">🌍 全世界</button>
+        <button class="feed-zone-btn" data-zone="friends">👥 友達</button>
+      </div>
+      <div id="feedContent"></div>
+    </div>
+
+    <!-- マイ日記タブ -->
+    <div class="tab-content" id="myTab">
+      <div id="myDiaryDebugInfo" class="debug-info-box"></div>
+      <div class="my-diary-filter">
+        <label>
+          ニックネームで絞り込み:
+          <select id="nicknameFilter" onchange="renderMyDiary()">
+            <option value="">すべて</option>
+          </select>
+        </label>
+      </div>
+      <div id="myDiaryContent"></div>
+    </div>
+
+    <!-- マイページタブ -->
+    <div class="tab-content" id="settingsTab">
+      <div class="settings-section">
+        <div class="settings-group">
+          <h3>友達コード</h3>
+          <div class="friend-code-display">
+            <div style="font-size: 13px; color: #666;">あなたの友達コード</div>
+            <div class="friend-code-text" id="friendCodeDisplay"></div>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <h3>ニックネーム管理</h3>
+          <div id="nicknamesList"></div>
+          <button class="btn btn-secondary" onclick="addNickname()">＋ ニックネームを追加</button>
+        </div>
+
+        <div class="settings-group">
+          <h3>友達コードを追加</h3>
+          <input type="text" id="addFriendCodeInput" placeholder="友達コードを入力" style="margin-bottom: 10px;">
+          <button class="btn" onclick="addFriendCode()">友達を追加</button>
+        </div>
+
+        <div class="settings-group">
+          <h3>見た目削除の管理</h3>
+          <button class="btn" onclick="clearHiddenDiaries()">見た目削除を全解除</button>
+        </div>
+
+        <div class="settings-group">
+          <h3>更新履歴</h3>
+          <div class="changelog">
+            <h4>Changelog</h4>
+            <div>（2026-01-18） v0.0.22 マイ日記0件になる不具合（userId不一致）を自動復元で修正</div>
+            <div>（2026-01-18） v0.0.21 マイ日記の表示不具合修正＋編集/見た目削除を追加</div>
+            <div>（2026-01-18） v0.0.20 みんなの記録を12:00区切りで直近3日表示＋自分の投稿を非表示＋形式エラー耐性</div>
+            <div>（2026-01-18） v0.0.19 直近3日表示・マイ日記編集・余白最適化</div>
+            <div>（2026-01-17） v0.0.18 昼12時区切り・全世界3日表示・質問更新</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- デバッグパネル -->
+    <div class="debug-panel" id="debugPanel">
+      <h4>🔧 デバッグ情報</h4>
+      <div id="debugContent"></div>
+    </div>
+  </div>
+
+  <!-- 編集モーダル -->
+  <div class="modal" id="editModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>日記を編集</h3>
+        <button class="modal-close" onclick="closeEditModal()">×</button>
+      </div>
+      <div id="editQuestionsContainer"></div>
+      <button class="btn" onclick="saveEditedDiary()">保存</button>
+    </div>
+  </div>
+
+  <script>
+    const APP_VERSION = '0.0.22';
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwHN2pvh7y1i5cEEHIWrUP_o6cMnDRCGdfurK0xrw3cVEElKtAepEDZ510JnbDdY3BI/exec';
+    
+    // グローバル変数（deviceUserIdは絶対に変更しない）
+    let deviceUserId = localStorage.getItem('deviceUserId');
+    if (!deviceUserId) {
+      deviceUserId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('deviceUserId', deviceUserId);
+    }
+    
+    let nicknames = JSON.parse(localStorage.getItem('nicknames') || '[]');
+    let activeNickname = localStorage.getItem('activeNickname') || '';
+    let friendCodes = JSON.parse(localStorage.getItem('friendCodes') || '[]');
+    let currentFeedZone = 'public';
+    let allEntries = [];
+    let editingEntry = null;
+    let debugTapCount = 0;
+    let hiddenDiaryIds = JSON.parse(localStorage.getItem('hiddenDiaryIds') || '[]');
+    let editedDiaryMap = JSON.parse(localStorage.getItem('editedDiaryMap') || '{}');
+    let pendingPosts = JSON.parse(localStorage.getItem('pendingPosts') || '[]');
+
+    // 質問定義
+    const questions = [
+      { id: 'q1', label: '今日の気分は？', required: true },
+      { id: 'q2', label: '嬉しかったこと', required: true },
+      { id: 'q3', label: '今日の自分褒める', required: true },
+      { id: 'q4', label: '感謝したいこと（人でも物でも）', required: false },
+      { id: 'q5', label: 'やらかしたこと', required: false },
+      { id: 'q6', label: 'ちょっと心に残ったこと', required: false },
+      { id: 'q7', label: '残したいこと', required: false },
+      { id: 'q8', label: '明日の自分へ', required: false }
+    ];
+
+    // 安定した一意なdiaryIdを生成
+    function generateDiaryId(entry) {
+      const createdAt = entry.createdAt || entry.date || '';
+      const userId = entry.userId || '';
+      const nickname = entry.nickname || '';
+      return `${createdAt}|${userId}|${nickname}`;
+    }
+
+    // content を正規化（必ずオブジェクトに変換）
+    function normalizeContent(content) {
+      if (typeof content === 'string') {
+        try {
+          return JSON.parse(content);
+        } catch (e) {
+          console.warn('Content parse failed, returning raw:', content);
+          return { _raw: content };
+        }
+      } else if (typeof content === 'object' && content !== null) {
+        return content;
+      } else {
+        return { _raw: String(content) };
+      }
+    }
+
+    // deviceUserId自動復元ロジック
+    function attemptAutoRestore(myEntriesCount) {
+      console.log('=== 自動復元チェック開始 ===');
+      
+      if (allEntries.length === 0) {
+        console.log('復元不要: entries総数が0');
+        return { shouldRestore: false };
+      }
+      
+      if (myEntriesCount > 0) {
+        console.log('復元不要: すでにマイ日記が表示されている');
+        return { shouldRestore: false };
+      }
+      
+      const deviceEntries = allEntries.filter(e => {
+        const userId = String(e.userId || '');
+        return userId.startsWith('device_');
+      });
+      
+      if (deviceEntries.length === 0) {
+        console.log('復元不要: device_ で始まる userId が存在しない');
+        return { shouldRestore: false };
+      }
+      
+      console.log(`device_ で始まる投稿: ${deviceEntries.length}件`);
+      
+      const myNicknameEntries = allEntries.filter(e => {
+        return nicknames.includes(e.nickname);
+      });
+      
+      console.log(`自分のニックネーム一覧に含まれる投稿: ${myNicknameEntries.length}件`);
+      
+      if (myNicknameEntries.length === 0) {
+        console.log('復元不要: 自分のニックネームの投稿が存在しない');
+        return { shouldRestore: false };
+      }
+      
+      const userIdCount = {};
+      myNicknameEntries.forEach(e => {
+        const userId = String(e.userId || '');
+        if (userId) {
+          userIdCount[userId] = (userIdCount[userId] || 0) + 1;
+        }
+      });
+      
+      let candidateUserId = null;
+      let maxCount = 0;
+      Object.keys(userIdCount).forEach(userId => {
+        if (userIdCount[userId] > maxCount) {
+          maxCount = userIdCount[userId];
+          candidateUserId = userId;
+        }
+      });
+      
+      console.log('候補userId:', candidateUserId, '出現回数:', maxCount);
+      
+      if (!candidateUserId || !candidateUserId.startsWith('device_')) {
+        console.log('復元不要: 候補userIdが device_ で始まらない');
+        return { shouldRestore: false, candidateUserId };
+      }
+      
+      console.log('復元提案: あり');
+      return { shouldRestore: true, candidateUserId };
+    }
+
+    // Apps Script へのPOST送信（フォールバック対応）
+    async function postToAppsScript(data) {
+      const saveBtn = document.getElementById('saveButton');
+      if (saveBtn) saveBtn.disabled = true;
+
+      console.log('=== POST送信開始 ===');
+      console.log('送信先URL:', APPS_SCRIPT_URL);
+      console.log('送信データ:', data);
+
+      const actions = ['append', 'add', 'post', 'submit', 'save'];
+      
+      for (const action of actions) {
+        try {
+          const payload = { ...data, action };
+          console.log(`試行: action=${action}`);
+          
+          // まずJSON形式で送信
+          try {
+            const jsonResponse = await fetch(APPS_SCRIPT_URL, {
+              method: 'POST',
+              mode: 'cors',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(payload)
+            });
+            
+            console.log(`JSON送信 status: ${jsonResponse.status}`);
+            const jsonText = await jsonResponse.text();
+            console.log('JSON送信 response:', jsonText);
+            
+            if (jsonResponse.ok) {
+              try {
+                const result = JSON.parse(jsonText);
+                if (result.success || result.result === 'ok') {
+                  console.log('✅ 送信成功 (JSON)');
+                  if (saveBtn) saveBtn.disabled = false;
+                  return { success: true, response: result };
+                }
+              } catch (e) {
+                // パース失敗でもステータスがOKなら成功とみなす
+                if (jsonResponse.status === 200 || jsonResponse.status === 201) {
+                  console.log('✅ 送信成功 (JSON, status OK)');
+                  if (saveBtn) saveBtn.disabled = false;
+                  return { success: true, response: { text: jsonText } };
+                }
+              }
+            }
+          } catch (jsonError) {
+            console.warn('JSON送信エラー:', jsonError.message);
+          }
+          
+          // URLエンコード形式で再試行
+          try {
+            const formData = new URLSearchParams();
+            Object.keys(payload).forEach(key => {
+              formData.append(key, payload[key]);
+            });
+            
+            const formResponse = await fetch(APPS_SCRIPT_URL, {
+              method: 'POST',
+              mode: 'cors',
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+              },
+              body: formData
+            });
+            
+            console.log(`URLエンコード送信 status: ${formResponse.status}`);
+            const formText = await formResponse.text();
+            console.log('URLエンコード送信 response:', formText);
+            
+            if (formResponse.ok) {
+              try {
+                const result = JSON.parse(formText);
+                if (result.success || result.result === 'ok') {
+                  console.log('✅ 送信成功 (URLエンコード)');
+                  if (saveBtn) saveBtn.disabled = false;
+                  return { success: true, response: result };
+                }
+              } catch (e) {
+                if (formResponse.status === 200 || formResponse.status === 201) {
+                  console.log('✅ 送信成功 (URLエンコード, status OK)');
+                  if (saveBtn) saveBtn.disabled = false;
+                  return { success: true, response: { text: formText } };
+                }
+              }
+            }
+          } catch (formError) {
+            console.warn('URLエンコード送信エラー:', formError.message);
+          }
+          
+        } catch (error) {
+          console.warn(`action=${action} 失敗:`, error.message);
+        }
+      }
+      
+      console.error('❌ すべてのaction試行が失敗');
+      if (saveBtn) saveBtn.disabled = false;
+      return { success: false, error: 'すべての送信方法が失敗しました' };
+    }
+
+    // オフライン時の保存とオンライン復帰時の再送信
+    async function processPendingPosts() {
+      if (!navigator.onLine || pendingPosts.length === 0) return;
+      
+      console.log(`=== pending投稿を送信: ${pendingPosts.length}件 ===`);
+      const successfulPosts = [];
+      
+      for (const post of pendingPosts) {
+        const result = await postToAppsScript(post);
+        if (result.success) {
+          successfulPosts.push(post);
+        }
+      }
+      
+      pendingPosts = pendingPosts.filter(p => !successfulPosts.includes(p));
+      localStorage.setItem('pendingPosts', JSON.stringify(pendingPosts));
+      
+      if (successfulPosts.length > 0) {
+        console.log(`✅ ${successfulPosts.length}件のpending投稿を送信完了`);
+        loadFeed();
+      }
+    }
+
+    // オンライン/オフライン検知
+    window.addEventListener('online', () => {
+      console.log('オンラインに復帰');
+      processPendingPosts();
+    });
+    
+    window.addEventListener('offline', () => {
+      console.log('オフラインになりました');
+    });
+
+    // 初期化
+    function init() {
+      try {
+        updateNicknameDisplay();
+        updateFriendCodeDisplay();
+        setupTabs();
+        setupFeedZoneTabs();
+        setupVersionBadge();
+        
+        if (activeNickname) {
+          showWriteSection();
+          renderQuestions();
+        } else {
+          showLoginSection();
+        }
+
+        loadFeed();
+        loadMyDiary();
+        renderNicknamesList();
+        updateNicknameFilterOptions();
+        
+        // pending投稿があれば送信試行
+        if (navigator.onLine) {
+          processPendingPosts();
+        }
+      } catch (error) {
+        console.error('Init error:', error);
+        updateDebugPanel({ error: error.message });
+      }
+    }
+
+    // 日付キー生成（JST、12:00区切り）
+    function generateDateKey(dateInput) {
+      try {
+        const date = dateInput ? new Date(dateInput) : new Date();
+        const jstOffset = 9 * 60;
+        const utcTime = date.getTime() + (date.getTimezoneOffset() * 60000);
+        const jstTime = new Date(utcTime + (jstOffset * 60000));
+        
+        const hour = jstTime.getHours();
+        
+        if (hour < 12) {
+          jstTime.setDate(jstTime.getDate() - 1);
+        }
+        
+        const year = jstTime.getFullYear();
+        const month = String(jstTime.getMonth() + 1).padStart(2, '0');
+        const day = String(jstTime.getDate()).padStart(2, '0');
+        
+        return `${year}-${month}-${day}`;
+      } catch (error) {
+        console.error('DateKey generation error:', error);
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+    }
+
+    // タブ切り替え
+    function setupTabs() {
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          const targetTab = tab.dataset.tab;
+          
+          document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+          document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+          
+          tab.classList.add('active');
+          document.getElementById(targetTab + 'Tab').classList.add('active');
+          
+          if (targetTab === 'feed') {
+            loadFeed();
+          } else if (targetTab === 'my') {
+            loadMyDiary();
+          } else if (targetTab === 'settings') {
+            renderNicknamesList();
+          }
+        });
+      });
+    }
+
+    // フィードゾーン切り替え
+    function setupFeedZoneTabs() {
+      document.querySelectorAll('.feed-zone-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.feed-zone-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          currentFeedZone = btn.dataset.zone;
+          renderFeed();
+        });
+      });
+    }
+
+    // バージョンバッジ設定（5回タップでデバッグ表示）
+    function setupVersionBadge() {
+      const badge = document.getElementById('versionBadge');
+      badge.addEventListener('click', () => {
+        debugTapCount++;
+        if (debugTapCount >= 5) {
+          const debugPanel = document.getElementById('debugPanel');
+          debugPanel.classList.toggle('visible');
+          debugTapCount = 0;
+        }
+        setTimeout(() => { debugTapCount = 0; }, 2000);
+      });
+    }
+
+    // ログイン処理
+    function handleLogin() {
+      const nickname = document.getElementById('loginNickname').value.trim();
+      if (!nickname) {
+        showMessage('ニックネームを入力してください', 'error');
+        return;
+      }
+      
+      if (!nicknames.includes(nickname)) {
+        nicknames.push(nickname);
+        localStorage.setItem('nicknames', JSON.stringify(nicknames));
+      }
+      
+      activeNickname = nickname;
+      localStorage.setItem('activeNickname', activeNickname);
+      
+      showWriteSection();
+      renderQuestions();
+      updateNicknameDisplay();
+      updateNicknameFilterOptions();
+    }
+
+    // ログイン画面表示
+    function showLoginSection() {
+      document.getElementById('loginSection').style.display = 'block';
+      document.getElementById('writeSection').style.display = 'none';
+    }
+
+    // 書く画面表示
+    function showWriteSection() {
+      document.getElementById('loginSection').style.display = 'none';
+      document.getElementById('writeSection').style.display = 'block';
+    }
+
+    // ニックネーム表示更新
+    function updateNicknameDisplay() {
+      const display = document.getElementById('nicknameDisplay');
+      if (activeNickname) {
+        display.textContent = `こんにちは、${activeNickname}さん`;
+      } else {
+        display.textContent = '';
+      }
+    }
+
+    // 友達コード表示更新
+    function updateFriendCodeDisplay() {
+      document.getElementById('friendCodeDisplay').textContent = deviceUserId.substr(0, 8).toUpperCase();
+    }
+
+    // ニックネームフィルタオプション更新
+    function updateNicknameFilterOptions() {
+      const select = document.getElementById('nicknameFilter');
+      if (!select) return;
+      
+      const currentValue = select.value;
+      select.innerHTML = '<option value="">すべて</option>';
+      
+      nicknames.forEach(nickname => {
+        const option = document.createElement('option');
+        option.value = nickname;
+        option.textContent = nickname;
+        select.appendChild(option);
+      });
+      
+      select.value = currentValue;
+    }
+
+    // 質問レンダリング
+    function renderQuestions(answersData = null) {
+      try {
+        const container = document.getElementById('questionsContainer');
+        container.innerHTML = '';
+        
+        questions.forEach(q => {
+          const formGroup = document.createElement('div');
+          formGroup.className = 'form-group';
+          
+          const header = document.createElement('div');
+          header.className = 'question-header';
+          
+          const label = document.createElement('div');
+          label.className = 'question-label';
+          label.textContent = q.label;
+          
+          const badge = document.createElement('span');
+          badge.className = q.required ? 'required-badge' : 'optional-badge';
+          badge.textContent = q.required ? '必須' : '任意';
+          
+          header.appendChild(label);
+          header.appendChild(badge);
+          formGroup.appendChild(header);
+          
+          const textarea = document.createElement('textarea');
+          textarea.id = q.id;
+          textarea.placeholder = q.required ? '入力してください' : '任意';
+          if (answersData) {
+            const answer = answersData.find(a => a.id === q.id);
+            if (answer) textarea.value = answer.value || '';
+          }
+          formGroup.appendChild(textarea);
+          
+          const visibilityGroup = document.createElement('div');
+          visibilityGroup.className = 'visibility-group';
+          
+          const visibilityOptions = [
+            { value: 'private', label: '🔒 自分用' },
+            { value: 'anonymous', label: '👤 匿名公開' },
+            { value: 'public', label: '🌍 全体公開' },
+            { value: 'friends', label: '👥 友達のみ' }
+          ];
+          
+          visibilityOptions.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'visibility-btn';
+            btn.dataset.question = q.id;
+            btn.dataset.visibility = opt.value;
+            btn.textContent = opt.label;
+            
+            if (answersData) {
+              const answer = answersData.find(a => a.id === q.id);
+              if (answer && answer.visibility === opt.value) {
+                btn.classList.add('active');
+              }
+            } else if (opt.value === 'public') {
+              btn.classList.add('active');
+            }
+            
+            btn.addEventListener('click', function() {
+              document.querySelectorAll(`.visibility-btn[data-question="${q.id}"]`)
+                .forEach(b => b.classList.remove('active'));
+              this.classList.add('active');
+            });
+            
+            visibilityGroup.appendChild(btn);
+          });
+          
+          formGroup.appendChild(visibilityGroup);
+          container.appendChild(formGroup);
+        });
+        
+        updateDebugPanel({ questionsCount: questions.length });
+      } catch (error) {
+        console.error('Render questions error:', error);
+        updateDebugPanel({ renderError: error.message });
+      }
+    }
+
+    // 日記保存
+    async function saveDiary() {
+      const answers = [];
+      let hasRequiredEmpty = false;
+      
+      questions.forEach(q => {
+        const textarea = document.getElementById(q.id);
+        const value = textarea ? textarea.value.trim() : '';
+        
+        if (q.required && !value) {
+          hasRequiredEmpty = true;
+        }
+        
+        const activeBtn = document.querySelector(`.visibility-btn[data-question="${q.id}"].active`);
+        const visibility = activeBtn ? activeBtn.dataset.visibility : 'public';
+        
+        answers.push({
+          id: q.id,
+          label: q.label,
+          value: value,
+          visibility: visibility
+        });
+      });
+      
+      if (hasRequiredEmpty) {
+        showMessage('必須項目を入力してください', 'error');
+        return;
+      }
+      
+      const dateKey = generateDateKey();
+      const entryId = `${deviceUserId}_${activeNickname}_${dateKey}_${Date.now()}`;
+      const contentObject = { answers };
+      
+      const diaryData = {
+        userId: deviceUserId,
+        nickname: activeNickname,
+        date: new Date().toISOString(),
+        dateKey: dateKey,
+        content: JSON.stringify(contentObject),
+        entryId: entryId,
+        createdAt: new Date().toISOString()
+      };
+      
+      if (!navigator.onLine) {
+        // オフライン時はpending queueに保存
+        pendingPosts.push(diaryData);
+        localStorage.setItem('pendingPosts', JSON.stringify(pendingPosts));
+        showMessage('オフラインのため一時保存しました。オンライン復帰時に送信します', 'success');
+        questions.forEach(q => {
+          const textarea = document.getElementById(q.id);
+          if (textarea) textarea.value = '';
+        });
+        return;
+      }
+      
+      const result = await postToAppsScript(diaryData);
+      
+      if (result.success) {
+        showMessage('送信できました', 'success');
+        questions.forEach(q => {
+          const textarea = document.getElementById(q.id);
+          if (textarea) textarea.value = '';
+        });
+        loadFeed();
+        loadMyDiary();
+      } else {
+        const errorMsg = result.error || 'Load failed';
+        showMessage(`送信できていません: ${errorMsg}`, 'error');
+        console.error('保存失敗:', result);
+      }
+    }
+
+    // フィード読み込み
+    async function loadFeed() {
+      try {
+        const url = `${APPS_SCRIPT_URL}?action=list`;
+        console.log('Fetching from:', url);
+        
+        const response = await fetch(url);
+        const text = await response.text();
+        console.log('Raw response:', text.substring(0, 500));
+        
+        const data = JSON.parse(text);
+        console.log('Parsed data:', data);
+        
+        if (!data || data.result !== 'ok' || !Array.isArray(data.entries)) {
+          console.error('Invalid data format. Full response:', text);
+          throw new Error('Invalid data format');
+        }
+        
+        allEntries = data.entries.map(entry => ({
+          ...entry,
+          content: normalizeContent(entry.content)
+        }));
+        
+        console.log('Total entries:', allEntries.length);
+        if (allEntries.length > 0) {
+          console.log('First entry:', allEntries[0]);
+        }
+        renderFeed();
+        
+        updateDebugPanel({
+          lastFetchStatus: 'success',
+          entriesFetched: allEntries.length
+        });
+      } catch (error) {
+        console.error('Load feed error:', error);
+        document.getElementById('feedContent').innerHTML = 
+          `<div class="empty-state"><div class="empty-state-icon">⚠️</div><p>データの読み込みに失敗しました</p><p style="font-size: 12px; color: #999;">${error.message}</p></div>`;
+        
+        updateDebugPanel({
+          lastFetchStatus: 'error',
+          error: error.message
+        });
+      }
+    }
+
+    // フィード表示
+    function renderFeed() {
+      const container = document.getElementById('feedContent');
+      const todayKey = generateDateKey();
+      
+      console.log('Rendering feed, zone:', currentFeedZone, 'todayKey:', todayKey);
+      
+      const entriesWithDateKey = allEntries.map(entry => {
+        const dateKey = generateDateKey(entry.createdAt || entry.date);
+        return { ...entry, calculatedDateKey: dateKey };
+      });
+      
+      console.log('Entries with dateKey:', entriesWithDateKey.slice(0, 3));
+      
+      let filtered = entriesWithDateKey.filter(entry => {
+        const isSelf = entry.userId === deviceUserId && entry.nickname === activeNickname;
+        return !isSelf;
+      });
+      
+      if (currentFeedZone === 'public') {
+        const now = new Date();
+        const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        const dayBefore = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
+        
+        const todayKey = generateDateKey(now);
+        const yesterdayKey = generateDateKey(yesterday);
+        const dayBeforeKey = generateDateKey(dayBefore);
+        const targetDays = [todayKey, yesterdayKey, dayBeforeKey];
+        
+        console.log('Target days:', targetDays);
+        
+        filtered = filtered.filter(entry => {
+          const matchDay = targetDays.includes(entry.calculatedDateKey);
+          if (entry.zone === 'friends') return false;
+          return matchDay;
+        });
+        
+        console.log('Public filtered count:', filtered.length);
+      } else {
+        filtered = filtered.filter(entry => entry.zone === 'friends');
+        console.log('Friends filtered count:', filtered.length);
+      }
+      
+      filtered.sort((a, b) => {
+        const dateA = new Date(a.createdAt || a.date);
+        const dateB = new Date(b.createdAt || b.date);
+        return dateB - dateA;
+      });
+      
+      updateDebugPanel({
+        todayKey: todayKey,
+        match3daysCount: filtered.length,
+        publicCount: entriesWithDateKey.filter(e => e.zone !== 'friends' && !(e.userId === deviceUserId && e.nickname === activeNickname)).length,
+        friendsCount: entriesWithDateKey.filter(e => e.zone === 'friends' && !(e.userId === deviceUserId && e.nickname === activeNickname)).length,
+        renderedCount: filtered.length
+      });
+      
+      if (filtered.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>まだ投稿がありません</p></div>';
+        return;
+      }
+      
+      const groupedByDate = {};
+      filtered.forEach(entry => {
+        const dateKey = entry.calculatedDateKey;
+        if (!groupedByDate[dateKey]) {
+          groupedByDate[dateKey] = [];
+        }
+        groupedByDate[dateKey].push(entry);
+      });
+      
+      container.innerHTML = '';
+      
+      Object.keys(groupedByDate).sort().reverse().forEach(dateKey => {
+        const divider = document.createElement('div');
+        divider.className = 'date-divider';
+        divider.textContent = dateKey;
+        container.appendChild(divider);
+        
+        groupedByDate[dateKey].forEach(entry => {
+          const card = createDiaryCard(entry);
+          container.appendChild(card);
+        });
+      });
+    }
+
+    // 日記カード作成
+    function createDiaryCard(entry, isMyDiary = false) {
+      const card = document.createElement('div');
+      card.className = 'diary-card';
+      
+      const header = document.createElement('div');
+      header.className = 'diary-header';
+      
+      const author = document.createElement('div');
+      author.className = 'diary-author';
+      
+      let displayName = entry.nickname || '匿名';
+      if (entry.zone === 'anonymous' || !entry.nickname) {
+        displayName = '匿名';
+      }
+      author.textContent = displayName;
+      
+      const date = document.createElement('div');
+      date.className = 'diary-date';
+      const dateKey = generateDateKey(entry.createdAt || entry.date);
+      date.textContent = dateKey;
+      
+      header.appendChild(author);
+      header.appendChild(date);
+      card.appendChild(header);
+      
+      const content = document.createElement('div');
+      content.className = 'diary-content';
+      
+      const contentObj = entry.content;
+      let answers = [];
+      
+      if (contentObj.answers && Array.isArray(contentObj.answers)) {
+        answers = contentObj.answers;
+      } else if (contentObj._raw) {
+        const answerDiv = document.createElement('div');
+        answerDiv.className = 'diary-answer';
+        const answerText = document.createElement('div');
+        answerText.className = 'diary-answer-text';
+        answerText.textContent = contentObj._raw;
+        answerDiv.appendChild(answerText);
+        content.appendChild(answerDiv);
+        card.appendChild(content);
+        return card;
+      }
+      
+      const nonEmptyAnswers = answers.filter(a => a.value && a.value.trim());
+      
+      if (nonEmptyAnswers.length === 0) {
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = 'diary-answer-text';
+        emptyDiv.textContent = '（内容なし）';
+        emptyDiv.style.color = '#999';
+        content.appendChild(emptyDiv);
+        card.appendChild(content);
+        return card;
+      }
+      
+      const displayCount = Math.min(3, nonEmptyAnswers.length);
+      
+      for (let i = 0; i < displayCount; i++) {
+        const answer = nonEmptyAnswers[i];
+        const answerDiv = document.createElement('div');
+        answerDiv.className = 'diary-answer';
+        
+        const questionLabel = document.createElement('div');
+        questionLabel.className = 'diary-question';
+        questionLabel.textContent = answer.label || '質問';
+        
+        const answerText = document.createElement('div');
+        answerText.className = 'diary-answer-text';
+        const cleanedText = answer.value.trim().replace(/\n{3,}/g, '\n\n');
+        answerText.textContent = cleanedText;
+        
+        answerDiv.appendChild(questionLabel);
+        answerDiv.appendChild(answerText);
+        content.appendChild(answerDiv);
+      }
+      
+      if (nonEmptyAnswers.length > 3) {
+        const showMoreBtn = document.createElement('button');
+        showMoreBtn.className = 'show-more-btn';
+        showMoreBtn.textContent = '続きを読む';
+        showMoreBtn.onclick = () => {
+          for (let i = displayCount; i < nonEmptyAnswers.length; i++) {
+            const answer = nonEmptyAnswers[i];
+            const answerDiv = document.createElement('div');
+            answerDiv.className = 'diary-answer';
+            
+            const questionLabel = document.createElement('div');
+            questionLabel.className = 'diary-question';
+            questionLabel.textContent = answer.label || '質問';
+            
+            const answerText = document.createElement('div');
+            answerText.className = 'diary-answer-text';
+            const cleanedText = answer.value.trim().replace(/\n{3,}/g, '\n\n');
+            answerText.textContent = cleanedText;
+            
+            answerDiv.appendChild(questionLabel);
+            answerDiv.appendChild(answerText);
+            content.appendChild(answerDiv);
+          }
+          showMoreBtn.remove();
+        };
+        content.appendChild(showMoreBtn);
+      }
+      
+      card.appendChild(content);
+      
+      if (isMyDiary) {
+        const actions = document.createElement('div');
+        actions.className = 'my-diary-actions';
+        
+        const editBtn = document.createElement('button');
+        editBtn.className = 'edit-diary-btn';
+        editBtn.textContent = '✏️ 編集';
+        editBtn.onclick = () => openEditModal(entry);
+        
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-diary-btn';
+        deleteBtn.textContent = '🗑 削除（見た目）';
+        deleteBtn.onclick = () => deleteDiaryVisual(entry);
+        
+        actions.appendChild(editBtn);
+        actions.appendChild(deleteBtn);
+        card.appendChild(actions);
+      }
+      
+      return card;
+    }
+
+    // マイ日記読み込み
+    async function loadMyDiary() {
+      if (allEntries.length === 0) {
+        await loadFeed();
+      }
+      renderMyDiary();
+    }
+
+    // マイ日記表示
+    function renderMyDiary() {
+      console.log('=== マイ日記表示開始 ===');
+      console.log('deviceUserId:', deviceUserId);
+      console.log('activeNickname:', activeNickname);
+      console.log('entries総数:', allEntries.length);
+      
+      const container = document.getElementById('myDiaryContent');
+      const debugBox = document.getElementById('myDiaryDebugInfo');
+      const nicknameFilter = document.getElementById('nicknameFilter');
+      const selectedNickname = nicknameFilter ? nicknameFilter.value : '';
+      
+      let myEntries = allEntries.filter(entry => {
+        const entryUserId = String(entry.userId || '');
+        return entryUserId === deviceUserId;
+      });
+      
+      console.log('userId抽出後の件数:', myEntries.length);
+      
+      const restoreResult = attemptAutoRestore(myEntries.length);
+      
+      const entryUserIds = allEntries.slice(0, 3).map((e, i) => `[${i}] ${e.userId || 'なし'}`).join(', ');
+      let debugHtml = `
+        <strong>デバッグ情報:</strong><br>
+        deviceUserId: ${deviceUserId}<br>
+        entries総数: ${allEntries.length}<br>
+        myEntries件数（絞り込み前）: ${myEntries.length}<br>
+        先頭3件のuserId: ${entryUserIds || 'なし'}
+      `;
+      
+      if (restoreResult.candidateUserId) {
+        debugHtml += `<br>candidateUserId: ${restoreResult.candidateUserId}<br>`;
+        debugHtml += `復元提案: ${restoreResult.shouldRestore ? 'あり' : 'なし'}`;
+      } else {
+        debugHtml += `<br>復元提案: なし`;
+      }
+      
+      debugBox.innerHTML = debugHtml;
+      
+      if (restoreResult.shouldRestore && restoreResult.candidateUserId) {
+        const confirmed = confirm(
+          'マイ日記が表示されないため、過去データに合わせて端末IDを復元します。\n' +
+          '復元するとマイ日記が見られるようになります。よろしいですか？'
+        );
+        
+        if (confirmed) {
+          console.log('復元実行:', restoreResult.candidateUserId);
+          localStorage.setItem('deviceUserId', restoreResult.candidateUserId);
+          location.reload();
+          return;
+        } else {
+          console.log('復元キャンセル');
+        }
+      }
+      
+      if (myEntries.length > 0) {
+        console.log('先頭1件:', myEntries[0]);
+      }
+      
+      if (selectedNickname) {
+        myEntries = myEntries.filter(entry => entry.nickname === selectedNickname);
+        console.log(`ニックネーム"${selectedNickname}"フィルタ後の件数:`, myEntries.length);
+      }
+      
+      myEntries = myEntries.filter(entry => {
+        const diaryId = generateDiaryId(entry);
+        return !hiddenDiaryIds.includes(diaryId);
+      });
+      
+      console.log('hiddenDiaryIds除外後の件数:', myEntries.length);
+      
+      myEntries = myEntries.map(entry => {
+        const diaryId = generateDiaryId(entry);
+        if (editedDiaryMap[diaryId]) {
+          return { ...entry, content: editedDiaryMap[diaryId] };
+        }
+        return entry;
+      });
+      
+      myEntries.sort((a, b) => {
+        const dateA = new Date(a.createdAt || a.date);
+        const dateB = new Date(b.createdAt || b.date);
+        return dateB - dateA;
+      });
+      
+      if (myEntries.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📝</div><p>まだ日記がありません</p></div>';
+        return;
+      }
+      
+      container.innerHTML = '';
+      myEntries.forEach(entry => {
+        const card = createDiaryCard(entry, true);
+        container.appendChild(card);
+      });
+      
+      console.log('=== マイ日記表示完了 ===');
+    }
+
+    // 編集モーダルを開く
+    function openEditModal(entry) {
+      editingEntry = entry;
+      const modal = document.getElementById('editModal');
+      modal.classList.add('visible');
+      
+      const contentObj = entry.content;
+      let answers = [];
+      
+      if (contentObj.answers && Array.isArray(contentObj.answers)) {
+        answers = contentObj.answers;
+      }
+      
+      renderEditQuestions(answers);
+    }
+
+    // 編集モーダルを閉じる
+    function closeEditModal() {
+      const modal = document.getElementById('editModal');
+      modal.classList.remove('visible');
+      editingEntry = null;
+    }
+
+    // 編集用質問レンダリング
+    function renderEditQuestions(answersData) {
+      const container = document.getElementById('editQuestionsContainer');
+      container.innerHTML = '';
+      
+      questions.forEach(q => {
+        const formGroup = document.createElement('div');
+        formGroup.className = 'form-group';
+        
+        const header = document.createElement('div');
+        header.className = 'question-header';
+        
+        const label = document.createElement('div');
+        label.className = 'question-label';
+        label.textContent = q.label;
+        
+        const badge = document.createElement('span');
+        badge.className = q.required ? 'required-badge' : 'optional-badge';
+        badge.textContent = q.required ? '必須' : '任意';
+        
+        header.appendChild(label);
+        header.appendChild(badge);
+        formGroup.appendChild(header);
+        
+        const textarea = document.createElement('textarea');
+        textarea.id = 'edit_' + q.id;
+        textarea.placeholder = q.required ? '入力してください' : '任意';
+        const answer = answersData.find(a => a.id === q.id);
+        if (answer) textarea.value = answer.value || '';
+        formGroup.appendChild(textarea);
+        
+        const visibilityGroup = document.createElement('div');
+        visibilityGroup.className = 'visibility-group';
+        
+        const visibilityOptions = [
+          { value: 'private', label: '🔒 自分用' },
+          { value: 'anonymous', label: '👤 匿名公開' },
+          { value: 'public', label: '🌍 全体公開' },
+          { value: 'friends', label: '👥 友達のみ' }
+        ];
+        
+        visibilityOptions.forEach(opt => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'visibility-btn';
+          btn.dataset.question = 'edit_' + q.id;
+          btn.dataset.visibility = opt.value;
+          btn.textContent = opt.label;
+          
+          if (answer && answer.visibility === opt.value) {
+            btn.classList.add('active');
+          } else if (!answer && opt.value === 'public') {
+            btn.classList.add('active');
+          }
+          
+          btn.addEventListener('click', function() {
+            document.querySelectorAll(`.visibility-btn[data-question="edit_${q.id}"]`)
+              .forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+          });
+          
+          visibilityGroup.appendChild(btn);
+        });
+        
+        formGroup.appendChild(visibilityGroup);
+        container.appendChild(formGroup);
+      });
+    }
+
+    // 編集した日記を保存（ローカル保存）
+    function saveEditedDiary() {
+      const answers = [];
+      let hasRequiredEmpty = false;
+      
+      questions.forEach(q => {
+        const textarea = document.getElementById('edit_' + q.id);
+        const value = textarea ? textarea.value.trim() : '';
+        
+        if (q.required && !value) {
+          hasRequiredEmpty = true;
+        }
+        
+        const activeBtn = document.querySelector(`.visibility-btn[data-question="edit_${q.id}"].active`);
+        const visibility = activeBtn ? activeBtn.dataset.visibility : 'public';
+        
+        answers.push({
+          id: q.id,
+          label: q.label,
+          value: value,
+          visibility: visibility
+        });
+      });
+      
+      if (hasRequiredEmpty) {
+        showMessage('必須項目を入力してください', 'error');
+        return;
+      }
+      
+      const diaryId = generateDiaryId(editingEntry);
+      
+      editedDiaryMap[diaryId] = { answers };
+      localStorage.setItem('editedDiaryMap', JSON.stringify(editedDiaryMap));
+      
+      showMessage('編集内容を保存しました', 'success');
+      closeEditModal();
+      renderMyDiary();
+    }
+
+    // 見た目だけ削除
+    function deleteDiaryVisual(entry) {
+      if (!confirm('この日記を非表示にしますか？（データは残ります）')) {
+        return;
+      }
+      
+      const diaryId = generateDiaryId(entry);
+      
+      if (!hiddenDiaryIds.includes(diaryId)) {
+        hiddenDiaryIds.push(diaryId);
+        localStorage.setItem('hiddenDiaryIds', JSON.stringify(hiddenDiaryIds));
+      }
+      
+      showMessage('この日記は非表示にしました（データは残っています）', 'success');
+      renderMyDiary();
+    }
+
+    // 見た目削除を全解除
+    function clearHiddenDiaries() {
+      if (!confirm('非表示にした日記をすべて表示に戻しますか？')) {
+        return;
+      }
+      
+      hiddenDiaryIds = [];
+      localStorage.setItem('hiddenDiaryIds', JSON.stringify(hiddenDiaryIds));
+      showMessage('非表示を全解除しました', 'success');
+      renderMyDiary();
+    }
+
+    // ニックネーム一覧表示
+    function renderNicknamesList() {
+      const container = document.getElementById('nicknamesList');
+      container.innerHTML = '';
+      
+      if (nicknames.length === 0) {
+        container.innerHTML = '<div class="empty-state" style="padding: 20px;"><p style="color: #999; font-size: 14px;">ニックネームが登録されていません</p></div>';
+        return;
+      }
+      
+      nicknames.forEach(nickname => {
+        const item = document.createElement('div');
+        item.className = 'nickname-item';
+        if (nickname === activeNickname) {
+          item.classList.add('active');
+        }
+        
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = nickname;
+        if (nickname === activeNickname) {
+          nameSpan.textContent += ' ✓';
+        }
+        
+        const actions = document.createElement('div');
+        actions.className = 'nickname-actions';
+        
+        if (nickname !== activeNickname) {
+          const selectBtn = document.createElement('button');
+          selectBtn.className = 'icon-btn select';
+          selectBtn.textContent = '選択';
+          selectBtn.onclick = () => {
+            activeNickname = nickname;
+            localStorage.setItem('activeNickname', activeNickname);
+            updateNicknameDisplay();
+            renderNicknamesList();
+            renderQuestions();
+          };
+          actions.appendChild(selectBtn);
+        }
+        
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'icon-btn delete';
+        deleteBtn.textContent = '削除';
+        deleteBtn.onclick = () => {
+          if (confirm(`${nickname} を削除しますか？`)) {
+            nicknames = nicknames.filter(n => n !== nickname);
+            localStorage.setItem('nicknames', JSON.stringify(nicknames));
+            if (activeNickname === nickname) {
+              activeNickname = nicknames[0] || '';
+              localStorage.setItem('activeNickname', activeNickname);
+              updateNicknameDisplay();
+              if (!activeNickname) {
+                showLoginSection();
+              }
+            }
+            renderNicknamesList();
+            updateNicknameFilterOptions();
+          }
+        };
+        actions.appendChild(deleteBtn);
+        
+        item.appendChild(nameSpan);
+        item.appendChild(actions);
+        container.appendChild(item);
+      });
+    }
+
+    // ニックネーム追加
+    function addNickname() {
+      const nickname = prompt('新しいニックネームを入力してください');
+      if (!nickname) return;
+      
+      const trimmed = nickname.trim();
+      if (!trimmed) {
+        showMessage('ニックネームを入力してください', 'error');
+        return;
+      }
+      
+      if (nicknames.includes(trimmed)) {
+        showMessage('そのニックネームは既に登録されています', 'error');
+        return;
+      }
+      
+      nicknames.push(trimmed);
+      localStorage.setItem('nicknames', JSON.stringify(nicknames));
+      renderNicknamesList();
+      updateNicknameFilterOptions();
+      showMessage(`${trimmed} を追加しました`, 'success');
+    }
+
+    // 友達コード追加
+    function addFriendCode() {
+      const input = document.getElementById('addFriendCodeInput');
+      const code = input.value.trim();
+      
+      if (!code) {
+        showMessage('友達コードを入力してください', 'error');
+        return;
+      }
+      
+      if (friendCodes.includes(code)) {
+        showMessage('その友達コードは既に登録されています', 'error');
+        return;
+      }
+      
+      friendCodes.push(code);
+      localStorage.setItem('friendCodes', JSON.stringify(friendCodes));
+      input.value = '';
+      showMessage('友達を追加しました', 'success');
+    }
+
+    // メッセージ表示
+    function showMessage(text, type) {
+      const messageBox = document.getElementById('messageBox');
+      messageBox.innerHTML = `<div class="message ${type}">${text}</div>`;
+      setTimeout(() => {
+        messageBox.innerHTML = '';
+      }, 3000);
+    }
+
+    // デバッグパネル更新
+    function updateDebugPanel(data) {
+      const debugContent = document.getElementById('debugContent');
+      const debugData = {
+        APP_VERSION,
+        appsScriptUrl: APPS_SCRIPT_URL,
+        ...data
+      };
+      
+      debugContent.innerHTML = Object.entries(debugData)
+        .map(([key, value]) => `<div class="debug-line"><strong>${key}:</strong> ${JSON.stringify(value)}</div>`)
+        .join('');
+    }
+
+    // ページ読み込み時に初期化
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
