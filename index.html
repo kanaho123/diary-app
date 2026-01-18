@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>今日の日記 v0.0.17</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px 10px;
+      color: #333;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      text-align: center;
+      position: relative;
+    }
+    .header h1 {
+      font-size: 28px;
+      margin-bottom: 5px;
+    }
+    .app-version {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-size: 14px;
+      opacity: 0.9;
+      font-weight: 600;
+    }
+    .tabs {
+      display: flex;
+      background: #f5f5f5;
+      border-bottom: 2px solid #ddd;
+    }
+    .tab {
+      flex: 1;
+      padding: 15px;
+      text-align: center;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      color: #666;
+      transition: all 0.3s;
+    }
+    .tab.active {
+      background: white;
+      color: #667eea;
+      border-bottom: 3px solid #667eea;
+    }
+    .page {
+      display: none;
+      padding: 20px;
+      min-height: 300px;
+    }
+    .page.active {
+      display: block;
+    }
+    .btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 25px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      transition: all 0.3s;
+      margin: 5px;
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    .btn-secondary {
+      background: #6c757d;
+    }
+    .btn-danger {
+      background: #dc3545;
+    }
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 14px;
+    }
+    input, textarea, select {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: 2px solid #ddd;
+      border-radius: 10px;
+      font-size: 16px;
+      transition: border-color 0.3s;
+    }
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+      font-family: inherit;
+    }
+    .question-block {
+      margin: 20px 0;
+      padding: 15px;
+      background: #f9f9f9;
+      border-radius: 10px;
+      border-left: 4px solid #667eea;
+    }
+    .question-label {
+      font-weight: 600;
+      color: #667eea;
+      margin-bottom: 8px;
+      display: block;
+    }
+    .diary-card {
+      background: #f9f9f9;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s;
+      border-left: 4px solid #667eea;
+    }
+    .diary-card:hover {
+      background: #e8e8e8;
+      transform: translateX(5px);
+    }
+    .diary-author {
+      font-size: 15px;
+      color: #667eea;
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+    .diary-date {
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 10px;
+    }
+    .diary-content {
+      color: #333;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .diary-content.collapsed {
+      max-height: 150px;
+      overflow: hidden;
+      position: relative;
+    }
+    .diary-content.collapsed::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 50px;
+      background: linear-gradient(to bottom, transparent, #f9f9f9);
+    }
+    .read-more {
+      color: #667eea;
+      cursor: pointer;
+      font-size: 14px;
+      margin-top: 5px;
+      display: inline-block;
+    }
+    .read-more:hover {
+      text-decoration: underline;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.7);
+      z-index: 1000;
+      overflow-y: auto;
+    }
+    .modal.active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-content {
+      background: white;
+      border-radius: 20px;
+      padding: 30px;
+      max-width: 600px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative;
+    }
+    .modal-close {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: #dc3545;
+      color: white;
+      border: none;
+      width: 35px;
+      height: 35px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 20px;
+      line-height: 35px;
+      text-align: center;
+    }
+    .success-message, .error-message {
+      padding: 15px;
+      border-radius: 10px;
+      margin: 15px 0;
+      text-align: center;
+      font-weight: 600;
+    }
+    .success-message {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .error-message {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .loading-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+    }
+    .loading-overlay.active {
+      display: flex;
+    }
+    .loading-spinner {
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid #667eea;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .zone-tabs {
+      display: flex;
+      margin: 15px 0;
+      background: #f0f0f0;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .zone-tab {
+      flex: 1;
+      padding: 12px;
+      text-align: center;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 600;
+      color: #666;
+      transition: all 0.3s;
+    }
+    .zone-tab.active {
+      background: #667eea;
+      color: white;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #888;
+    }
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 15px;
+    }
+    .debug-info {
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.85);
+      color: #0f0;
+      padding: 10px;
+      border-radius: 10px;
+      font-family: monospace;
+      font-size: 10px;
+      z-index: 999;
+      line-height: 1.4;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+    .qa-item {
+      margin: 10px 0;
+      padding-left: 10px;
+    }
+    .qa-question {
+      font-weight: 600;
+      color: #667eea;
+      margin-bottom: 3px;
+    }
+    .qa-answer {
+      color: #333;
+      margin-left: 15px;
+    }
+    .edit-qa-block {
+      margin: 15px 0;
+      padding: 10px;
+      background: #f9f9f9;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+  </div>
+  <div class="container">
+    <div class="header">
+      <div class="app-version">v0.0.17</div>
+      <h1>今日の日記</h1>
+    </div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('write')">今日の日記</button>
+      <button class="tab" onclick="switchTab('public')">みんなの記録</button>
+      <button class="tab" onclick="switchTab('my')">マイ日記</button>
+      <button class="tab" onclick="switchTab('settings')">設定</button>
+    </div>
+    
+    <!-- 今日の日記 -->
+    <div id="writePage" class="page active">
+      <h2 style="color: #667eea; margin-bottom: 20px;">今日の日記を書く</h2>
+      <div id="writeMessage"></div>
+      <div class="question-block">
+        <label class="question-label">表示名</label>
+        <input type="text" id="userName" placeholder="名前を入力（設定で変更可）">
+      </div>
+      <div class="question-block">
+        <label class="question-label">公開範囲</label>
+        <select id="visibility">
+          <option value="public_named">全世界（名前あり）</option>
+          <option value="public_anonymous">全世界（匿名）</option>
+          <option value="friends">友達のみ</option>
+          <option value="private">非公開</option>
+        </select>
+      </div>
+      <div class="question-block">
+        <label class="question-label">Q1: 今日の気分は？（絵文字でもOK）</label>
+        <textarea id="q1" placeholder="例：😊 最高！"></textarea>
+      </div>
+      <div class="question-block">
+        <label class="question-label">Q2: 今日の良かったことは？</label>
+        <textarea id="q2" placeholder="良かった出来事を書いてください"></textarea>
+      </div>
+      <div class="question-block">
+        <label class="question-label">Q3: 明日へのメッセージ</label>
+        <textarea id="q3" placeholder="明日の自分へ"></textarea>
+      </div>
+      <button class="btn" onclick="submitDiary()" style="width: 100%; margin-top: 10px;">保存</button>
+    </div>
+    
+    <!-- みんなの記録 -->
+    <div id="publicPage" class="page">
+      <h2 style="color: #667eea; margin-bottom: 15px;">みんなの記録</h2>
+      <div class="zone-tabs">
+        <button class="zone-tab active" onclick="switchZone('world')">全世界</button>
+        <button class="zone-tab" onclick="switchZone('friends')">友達</button>
+      </div>
+      <div id="publicList"></div>
+    </div>
+    
+    <!-- マイ日記 -->
+    <div id="myPage" class="page">
+      <h2 style="color: #667eea; margin-bottom: 20px;">マイ日記</h2>
+      <div id="myList"></div>
+    </div>
+    
+    <!-- 設定 -->
+    <div id="settingsPage" class="page">
+      <h2 style="color: #667eea; margin-bottom: 20px;">設定</h2>
+      <div class="question-block">
+        <label class="question-label">デフォルト表示名</label>
+        <input type="text" id="settingsName" placeholder="名前">
+        <button class="btn btn-sm" onclick="saveName()">保存</button>
+      </div>
+      <div class="question-block">
+        <label class="question-label">更新履歴</label>
+        <div style="font-size: 13px; color: #666; line-height: 1.6;">
+          <strong>v0.0.17</strong> (2026-01-17)<br>
+          Sheets保存一本化＋表示をQ&A整形。[object Object]バグ修正、編集機能追加
+        </div>
+      </div>
+      <button class="btn btn-danger" onclick="clearData()" style="margin-top: 20px;">全データクリア（デバッグ用）</button>
+    </div>
+  </div>
+  
+  <!-- 編集モーダル -->
+  <div class="modal" id="editModal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeEditModal()">×</button>
+      <h2 style="color: #667eea; margin-bottom: 20px;">日記を編集</h2>
+      <div id="editModalContent"></div>
+      <button class="btn" onclick="saveEdit()" style="width: 100%; margin-top: 20px;">保存</button>
+    </div>
+  </div>
+  
+  <!-- デバッグ表示 -->
+  <div class="debug-info" id="debugInfo"></div>
+  
+  <script>
+    const API_URL = 'https://script.google.com/macros/s/AKfycbwHN2pvh7y1i5cEEHIWrUP_o6cMnDRCGdfurK0xrw3cVEElKtAepEDZ510JnbDdY3BI/exec';
+    const APP_VERSION = 'v0.0.17';
+    
+    let allEntries = [];
+    let currentZone = 'world';
+    let currentEditId = null;
+    let deviceId = localStorage.getItem('deviceId') || generateDeviceId();
+    
+    function generateDeviceId() {
+      const id = 'device_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('deviceId', id);
+      return id;
+    }
+    
+    // 初期化
+    window.onload = function() {
+      console.log('[INIT] App started, version:', APP_VERSION);
+      const savedName = localStorage.getItem('userName');
+      if (savedName) {
+        document.getElementById('userName').value = savedName;
+        document.getElementById('settingsName').value = savedName;
+      }
+      loadPublicDiaries();
+      updateDebug('初期化完了');
+    };
+    
+    // タブ切り替え
+    function switchTab(tab) {
+      console.log('[TAB] Switching to:', tab);
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById(tab + 'Page').classList.add('active');
+      
+      if (tab === 'public') loadPublicDiaries();
+      if (tab === 'my') loadMyDiaries();
+    }
+    
+    // ゾーン切り替え
+    function switchZone(zone) {
+      console.log('[ZONE] Switching to:', zone);
+      currentZone = zone;
+      document.querySelectorAll('.zone-tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+      renderPublicList();
+    }
+    
+    // 日記を投稿
+    async function submitDiary() {
+      console.log('[SUBMIT] Starting submission...');
+      const userName = document.getElementById('userName').value.trim();
+      const visibility = document.getElementById('visibility').value;
+      const q1 = document.getElementById('q1').value.trim();
+      const q2 = document.getElementById('q2').value.trim();
+      const q3 = document.getElementById('q3').value.trim();
+      
+      if (!userName) {
+        showMessage('error', '❌ 表示名を入力してください');
+        return;
+      }
+      if (!q1 && !q2 && !q3) {
+        showMessage('error', '❌ 少なくとも1つの質問に回答してください');
+        return;
+      }
+      
+      const answers = [
+        { question: 'Q1: 今日の気分は？', answer: q1 },
+        { question: 'Q2: 今日の良かったことは？', answer: q2 },
+        { question: 'Q3: 明日へのメッセージ', answer: q3 }
+      ].filter(qa => qa.answer);
+      
+      const payload = {
+        action: 'submit',
+        userName: userName,
+        deviceId: deviceId,
+        visibility: visibility,
+        answers: JSON.stringify(answers),
+        date: new Date().toISOString(),
+        zone: visibility.includes('public') ? 'public' : (visibility === 'friends' ? 'friends' : 'private')
+      };
+      
+      console.log('[SUBMIT] Payload:', payload);
+      showLoading(true);
+      
+      try {
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        console.log('[SUBMIT] Response status:', res.status);
+        const text = await res.text();
+        console.log('[SUBMIT] Response text:', text);
+        const data = JSON.parse(text);
+        console.log('[SUBMIT] Response data:', data);
+        
+        if (data.result === 'ok' || data.status === 'success') {
+          showMessage('success', '✅ 送信しました');
+          document.getElementById('q1').value = '';
+          document.getElementById('q2').value = '';
+          document.getElementById('q3').value = '';
+          setTimeout(() => {
+            switchTab('public');
+            loadPublicDiaries();
+          }, 1500);
+        } else {
+          showMessage('error', '❌ 送信できていません: ' + (data.error || '不明なエラー'));
+        }
+      } catch (err) {
+        console.error('[SUBMIT] Error:', err);
+        showMessage('error', '❌ 送信できていません: ' + err.message);
+        // オフライン時は localStorage に一時保存（将来の機能）
+      } finally {
+        showLoading(false);
+      }
+    }
+    
+    // 全世界一覧取得
+    async function loadPublicDiaries() {
+      console.log('[LOAD] Loading public diaries...');
+      showLoading(true);
+      updateDebug('データ取得中...');
+      
+      try {
+        const res = await fetch(API_URL + '?action=list');
+        console.log('[LOAD] Response status:', res.status);
+        const text = await res.text();
+        console.log('[LOAD] Raw response:', text.substring(0, 500));
+        const data = JSON.parse(text);
+        console.log('[LOAD] list raw:', data);
+        
+        let entries = [];
+        if (data.result === 'ok' && Array.isArray(data.entries)) {
+          entries = data.entries;
+        } else if (Array.isArray(data)) {
+          entries = data;
+        }
+        
+        console.log('[LOAD] Total entries:', entries.length);
+        if (entries.length > 0) {
+          console.log('[LOAD] first item:', entries[0]);
+        }
+        
+        allEntries = entries;
+        renderPublicList();
+        
+        const publicCount = entries.filter(e => (e.zone || '').toLowerCase() !== 'friends').length;
+        const friendsCount = entries.filter(e => (e.zone || '').toLowerCase() === 'friends').length;
+        const firstZone = entries.length > 0 ? (entries[0].zone || 'none') : 'none';
+        const firstDate = entries.length > 0 ? (entries[0].date || 'none') : 'none';
+        
+        updateDebug(`取得: ${entries.length}件 / 全世界: ${publicCount}件 / 友達: ${friendsCount}件 / 先頭zone: ${firstZone} / 先頭date: ${firstDate}`);
+      } catch (err) {
+        console.error('[LOAD] Error:', err);
+        updateDebug('取得失敗: ' + err.message);
+        document.getElementById('publicList').innerHTML = `<div class="error-message">❌ データの読み込みに失敗しました: ${err.message}</div>`;
+      } finally {
+        showLoading(false);
+      }
+    }
+    
+    // 全世界一覧を表示
+    function renderPublicList() {
+      console.log('[RENDER] Rendering public list, zone:', currentZone);
+      const container = document.getElementById('publicList');
+      
+      let filtered = allEntries.filter(e => {
+        const zone = (e.zone || '').toLowerCase();
+        if (currentZone === 'world') {
+          return zone !== 'friends';
+        } else {
+          return zone === 'friends';
+        }
+      });
+      
+      console.log('[RENDER] Filtered count:', filtered.length);
+      
+      if (filtered.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>まだ投稿がありません</p></div>';
+        return;
+      }
+      
+      container.innerHTML = filtered.map((entry, index) => {
+        const displayName = getDisplayName(entry);
+        const date = formatDate(entry.date || entry.createdAt);
+        const content = formatContent(entry.answers || entry.content);
+        const cardId = 'card_' + index;
+        
+        return `
+          <div class="diary-card">
+            <div class="diary-author">${escapeHtml(displayName)}</div>
+            <div class="diary-date">${escapeHtml(date)}</div>
+            <div class="diary-content collapsed" id="${cardId}">${content}</div>
+            <div class="read-more" onclick="toggleContent('${cardId}')">続きを読む</div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    // マイ日記取得
+    async function loadMyDiaries() {
+      console.log('[MY] Loading my diaries...');
+      if (allEntries.length === 0) {
+        await loadPublicDiaries();
+      }
+      
+      const myEntries = allEntries.filter(e => 
+        e.deviceId === deviceId || 
+        e.userName === document.getElementById('userName').value.trim()
+      );
+      
+      console.log('[MY] My entries count:', myEntries.length);
+      
+      const container = document.getElementById('myList');
+      if (myEntries.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📝</div><p>まだ投稿がありません</p></div>';
+        return;
+      }
+      
+      container.innerHTML = myEntries.map((entry, index) => {
+        const date = formatDate(entry.date || entry.createdAt);
+        const content = formatContent(entry.answers || entry.content);
+        
+        return `
+          <div class="diary-card">
+            <div class="diary-date">${escapeHtml(date)}</div>
+            <div class="diary-content">${content}</div>
+            <button class="btn btn-sm" onclick="editDiary(${index})">編集</button>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    // 編集モーダルを開く
+    function editDiary(index) {
+      const myEntries = allEntries.filter(e => 
+        e.deviceId === deviceId || 
+        e.userName === document.getElementById('userName').value.trim()
+      );
+      const entry = myEntries[index];
+      console.log('[EDIT] Opening edit modal for entry:', entry);
+      
+      currentEditId = entry.id;
+      let answers = [];
+      try {
+        if (typeof entry.answers === 'string') {
+          answers = JSON.parse(entry.answers);
+        } else if (Array.isArray(entry.answers)) {
+          answers = entry.answers;
+        }
+      } catch (e) {
+        console.error('[EDIT] Parse error:', e);
+      }
+      
+      const html = answers.map((qa, i) => `
+        <div class="edit-qa-block">
+          <div class="qa-question">${escapeHtml(qa.question)}</div>
+          <textarea id="editA${i}" style="width: 100%; margin-top: 5px;">${escapeHtml(qa.answer)}</textarea>
+        </div>
+      `).join('');
+      
+      document.getElementById('editModalContent').innerHTML = html;
+      document.getElementById('editModal').classList.add('active');
+    }
+    
+    // 編集を保存
+    async function saveEdit() {
+      console.log('[EDIT] Saving edit...');
+      const answers = [];
+      let i = 0;
+      while (document.getElementById('editA' + i)) {
+        const answer = document.getElementById('editA' + i).value.trim();
+        if (answer) {
+          answers.push({
+            question: 'Q' + (i + 1),
+            answer: answer
+          });
+        }
+        i++;
+      }
+      
+      // 新しい投稿として再送信（Apps Scriptに更新APIがない場合の対応）
+      const userName = document.getElementById('userName').value.trim();
+      const payload = {
+        action: 'submit',
+        userName: userName,
+        deviceId: deviceId,
+        visibility: 'public_named',
+        answers: JSON.stringify(answers),
+        date: new Date().toISOString(),
+        zone: 'public'
+      };
+      
+      console.log('[EDIT] Update payload:', payload);
+      showLoading(true);
+      
+      try {
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        console.log('[EDIT] Update response:', data);
+        
+        if (data.result === 'ok' || data.status === 'success') {
+          closeEditModal();
+          showMessage('success', '✅ 更新しました');
+          await loadPublicDiaries();
+          loadMyDiaries();
+        } else {
+          showMessage('error', '❌ 更新できませんでした');
+        }
+      } catch (err) {
+        console.error('[EDIT] Error:', err);
+        showMessage('error', '❌ 更新できませんでした: ' + err.message);
+      } finally {
+        showLoading(false);
+      }
+    }
+    
+    function closeEditModal() {
+      document.getElementById('editModal').classList.remove('active');
+    }
+    
+    // 表示名を取得
+    function getDisplayName(entry) {
+      const visibility = entry.visibility || '';
+      if (visibility === 'public_anonymous') return '匿名';
+      return entry.userName || entry.nickname || '匿名';
+    }
+    
+    // 日付フォーマット
+    function formatDate(dateStr) {
+      if (!dateStr) return '日付不明';
+      try {
+        const d = new Date(dateStr);
+        return d.toLocaleString('ja-JP', { 
+          year: 'numeric', 
+          month: '2-digit', 
+          day: '2-digit', 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        });
+      } catch (e) {
+        return dateStr;
+      }
+    }
+    
+    // コンテンツを整形表示
+    function formatContent(content) {
+      console.log('[FORMAT] Input content type:', typeof content, 'Value:', content);
+      
+      let answers = [];
+      try {
+        if (typeof content === 'string') {
+          answers = JSON.parse(content);
+        } else if (Array.isArray(content)) {
+          answers = content;
+        } else if (content && content.answers) {
+          answers = Array.isArray(content.answers) ? content.answers : JSON.parse(content.answers);
+        }
+      } catch (e) {
+        console.error('[FORMAT] Parse error:', e);
+        return escapeHtml(String(content));
+      }
+      
+      if (!Array.isArray(answers) || answers.length === 0) {
+        return '<div class="qa-item"><div class="qa-answer">内容がありません</div></div>';
+      }
+      
+      // 最初の3問まで表示
+      const displayAnswers = answers.slice(0, 3);
+      console.log('[FORMAT] Displaying', displayAnswers.length, 'answers');
+      
+      return displayAnswers.map(qa => `
+        <div class="qa-item">
+          <div class="qa-question">${escapeHtml(qa.question || 'Q')}</div>
+          <div class="qa-answer">${escapeHtml(qa.answer || '')}</div>
+        </div>
+      `).join('');
+    }
+    
+    // 続きを読むトグル
+    function toggleContent(cardId) {
+      const el = document.getElementById(cardId);
+      if (el) {
+        el.classList.toggle('collapsed');
+        event.target.textContent = el.classList.contains('collapsed') ? '続きを読む' : '閉じる';
+      }
+    }
+    
+    // 名前を保存
+    function saveName() {
+      const name = document.getElementById('settingsName').value.trim();
+      if (name) {
+        localStorage.setItem('userName', name);
+        document.getElementById('userName').value = name;
+        showMessage('success', '✅ 名前を保存しました');
+      }
+    }
+    
+    // データクリア
+    function clearData() {
+      if (confirm('本当に全データをクリアしますか？（復元できません）')) {
+        localStorage.clear();
+        deviceId = generateDeviceId();
+        showMessage('success', '✅ データをクリアしました');
+        location.reload();
+      }
+    }
+    
+    // メッセージ表示
+    function showMessage(type, text) {
+      const container = document.getElementById('writeMessage');
+      container.innerHTML = `<div class="${type}-message">${text}</div>`;
+      setTimeout(() => {
+        container.innerHTML = '';
+      }, 3000);
+    }
+    
+    // ローディング表示
+    function showLoading(show) {
+      document.getElementById('loadingOverlay').classList.toggle('active', show);
+    }
+    
+    // デバッグ情報更新
+    function updateDebug(text) {
+      document.getElementById('debugInfo').textContent = text;
+    }
+    
+    // HTMLエスケープ
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>
